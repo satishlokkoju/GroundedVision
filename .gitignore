@@ -1,5 +1,7 @@
 # Data
 /data/
+# Open source code
+/opensource/
 
 # Mac OS-specific storage files
 .DS_Store

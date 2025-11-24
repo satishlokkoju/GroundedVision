@@ -26,6 +26,8 @@ dependencies = [
     "python-dotenv",
     "tqdm",
     "typer",
+    "requests",
+    "pillow"
 ]
 requires-python = "~=3.12.0"
 

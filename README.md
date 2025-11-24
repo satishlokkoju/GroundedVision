@@ -62,4 +62,16 @@
 
 --------
 
+## Development Setup
 
+```
+conda create -n groundedvision_dev python=3.12
+conda deactivate
+conda activate groundedvision_dev
+```
+
+### Install dependecies
+
+```
+make requirements
+```
