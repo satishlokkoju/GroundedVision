@@ -1,5 +1,8 @@
 # Data
-/data/
+/data/external/
+/data/interim/
+/data/processed/
+/data/raw/
 # Open source code
 /opensource/
 

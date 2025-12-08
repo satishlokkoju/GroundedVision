@@ -12,7 +12,7 @@
 ## Project Organization
 
 ```
-├── LICENSE            <- Open-source license if one is chosen
+├── LICENSE            <- Open-source license
 ├── Makefile           <- Makefile with convenience commands like `make data` or `make train`
 ├── README.md          <- The top-level README for developers using this project.
 ├── data
@@ -75,3 +75,36 @@ conda activate groundedvision_dev
 ```
 make requirements
 ```
+
+
+### Generate synthetic Data for Training and testing
+
+FLUX.2 is the recent series of image generation models from Black Forest Labs.
+FLUX.2 can be used for both image-guided and text-guided image generation.
+
+Sample Construction images generated using Flux
+
+<table>
+  <tr>
+    <td><img src="./data/generated/track3d_output_0.png" width="300" alt="Description 1"></td>
+    <td><img src="./data/generated/track3d_output_1.png" width="300" alt="Description 2"></td>
+  </tr>
+  <tr>
+    <td><img src="./data/generated/track3d_output_3.png" width="300" alt="Description 3"></td>
+    <td><img src="./data/generated/track3d_output_5.png" width="300" alt="Description 4"></td>
+  </tr>
+</table>
+
+
+Sample Side by Side Comparision images Generated Using Flux
+
+<table>
+  <tr>
+    <td><img src="./data/generated/track3d_progress_output_0.png" width="400" alt="Description 1"></td>
+    <td><img src="./data/generated/track3d_progress_output_1.png" width="400" alt="Description 2"></td>
+  </tr>
+  <tr>
+    <td><img src="./data/generated/track3d_progress_output_4.png" width="400" alt="Description 3"></td>
+    <td><img src="./data/generated/track3d_progress_output_3.png" width="400" alt="Description 4"></td>
+  </tr>
+</table>
