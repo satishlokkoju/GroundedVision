@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>360° Image Comparison Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        #container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        #controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            background: rgba(15, 23, 42, 0.95);
+            padding: 20px;
+            border-radius: 12px;
+            max-width: 400px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        h1 {
+            font-size: 1.4rem;
+            margin-bottom: 6px;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            font-size: 0.8rem;
+            margin-bottom: 16px;
+        }
+
+        .section {
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .section-title {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #64748b;
+            margin-bottom: 10px;
+        }
+
+        .image-section {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+
+        .image-section.image-a {
+            border-left: 3px solid #60a5fa;
+        }
+
+        .image-section.image-b {
+            border-left: 3px solid #f472b6;
+        }
+
+        .image-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .image-label .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .image-a .dot {
+            background: #60a5fa;
+        }
+
+        .image-b .dot {
+            background: #f472b6;
+        }
+
+        .upload-area {
+            border: 2px dashed #334155;
+            border-radius: 6px;
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 10px;
+            font-size: 0.85rem;
+        }
+
+        .upload-area:hover {
+            border-color: #60a5fa;
+            background: rgba(96, 165, 250, 0.1);
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .control-group {
+            margin-bottom: 10px;
+        }
+
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+
+        label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: #cbd5e1;
+            margin-bottom: 4px;
+        }
+
+        .value {
+            color: #60a5fa;
+            font-weight: 600;
+        }
+
+        .image-b .value {
+            color: #f472b6;
+        }
+
+        .slider-input-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .slider-input-row input[type="range"] {
+            flex: 1;
+        }
+
+        .slider-input-row input[type="number"] {
+            width: 70px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: #fff;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            text-align: right;
+        }
+
+        .slider-input-row input[type="number"]:focus {
+            outline: none;
+            border-color: #60a5fa;
+        }
+
+        .slider-input-row input[type="number"]:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 5px;
+            background: #1e293b;
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            cursor: pointer;
+        }
+
+        input[type="range"]:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        input[type="range"]:disabled::-webkit-slider-thumb {
+            background: #64748b;
+            cursor: not-allowed;
+        }
+
+        .btn.locked {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+        }
+
+        .view-angles {
+            display: flex;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            margin-bottom: 10px;
+        }
+
+        .view-angles .angle-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .view-angles .angle-label {
+            color: #94a3b8;
+        }
+
+        .view-angles .angle-value {
+            color: #10b981;
+            font-weight: 600;
+            font-family: monospace;
+        }
+
+        .btn {
+            width: 100%;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 6px;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn.secondary {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: none;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 6px;
+        }
+
+        .btn-row .btn {
+            flex: 1;
+        }
+
+        .view-mode-btns {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .view-mode-btns .btn {
+            flex: 1;
+            min-width: 70px;
+            padding: 8px 12px;
+            font-size: 0.75rem;
+        }
+
+        .view-mode-btns .btn.active {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .instructions {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            padding: 10px;
+            font-size: 0.75rem;
+            line-height: 1.5;
+            color: #94a3b8;
+        }
+
+        .key {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 0.7rem;
+        }
+
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            display: none;
+            z-index: 50;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #60a5fa;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 12px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .toggle-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            backdrop-filter: blur(10px);
+        }
+
+        #controls.hidden {
+            transform: translateX(-420px);
+            opacity: 0;
+        }
+
+        #controls {
+            transition: transform 0.3s, opacity 0.3s;
+        }
+
+        #viewIndicator {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.9);
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .opacity-slider {
+            margin-top: 8px;
+        }
+
+        .btn.download {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .btn.download:hover {
+            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .download-progress {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-top: 6px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="container"></div>
+
+    <div id="controls">
+        <h1>360° Image Comparison</h1>
+        <p class="subtitle">Compare two aligned equirectangular images</p>
+
+        <!-- Image A -->
+        <div class="section">
+            <div class="image-section image-a">
+                <div class="image-label"><span class="dot"></span> Image A</div>
+                <label for="imageInputA" class="upload-area">📷 Upload Image A</label>
+                <input type="file" id="imageInputA" accept="image/*">
+                <div class="control-group">
+                    <label>Pitch:</label>
+                    <div class="slider-input-row">
+                        <input type="range" id="pitchSliderA" min="-180" max="180" value="0" step="0.1">
+                        <input type="number" id="pitchInputA" min="-180" max="180" value="0" step="0.1">°
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label>Yaw:</label>
+                    <div class="slider-input-row">
+                        <input type="range" id="yawSliderA" min="-180" max="180" value="0" step="0.1">
+                        <input type="number" id="yawInputA" min="-180" max="180" value="0" step="0.1">°
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label>Roll:</label>
+                    <div class="slider-input-row">
+                        <input type="range" id="rollSliderA" min="-180" max="180" value="0" step="0.1">
+                        <input type="number" id="rollInputA" min="-180" max="180" value="0" step="0.1">°
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Image B -->
+        <div class="section">
+            <div class="image-section image-b">
+                <div class="image-label"><span class="dot"></span> Image B</div>
+                <label for="imageInputB" class="upload-area">📷 Upload Image B</label>
+                <input type="file" id="imageInputB" accept="image/*">
+                <div class="control-group">
+                    <label>Pitch:</label>
+                    <div class="slider-input-row">
+                        <input type="range" id="pitchSliderB" min="-180" max="180" value="0" step="0.1">
+                        <input type="number" id="pitchInputB" min="-180" max="180" value="0" step="0.1">°
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label>Yaw:</label>
+                    <div class="slider-input-row">
+                        <input type="range" id="yawSliderB" min="-180" max="180" value="0" step="0.1">
+                        <input type="number" id="yawInputB" min="-180" max="180" value="0" step="0.1">°
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label>Roll:</label>
+                    <div class="slider-input-row">
+                        <input type="range" id="rollSliderB" min="-180" max="180" value="0" step="0.1">
+                        <input type="number" id="rollInputB" min="-180" max="180" value="0" step="0.1">°
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- View Mode -->
+        <div class="section">
+            <div class="section-title">Comparison Mode</div>
+            <div class="view-mode-btns">
+                <button class="btn active" id="modeA">Image A</button>
+                <button class="btn" id="modeB">Image B</button>
+                <button class="btn" id="modeBlend">Blend</button>
+                <button class="btn" id="modeSplit">Split</button>
+            </div>
+            <div class="opacity-slider" id="blendControls" style="display: none;">
+                <div class="control-group">
+                    <label>Blend: <span class="value" id="blendValue">50</span>%</label>
+                    <input type="range" id="blendSlider" min="0" max="100" value="50">
+                </div>
+            </div>
+        </div>
+
+        <!-- View Controls -->
+        <div class="section">
+            <div class="section-title">View Controls</div>
+            <div class="view-angles">
+                <div class="angle-item">
+                    <span class="angle-label">Lon:</span>
+                    <span class="angle-value" id="lonValue">0.0</span>°
+                </div>
+                <div class="angle-item">
+                    <span class="angle-label">Lat:</span>
+                    <span class="angle-value" id="latValue">0.0</span>°
+                </div>
+            </div>
+            <div class="control-group">
+                <label>Field of View: <span class="value" id="fovValue">75</span>°</label>
+                <input type="range" id="fovSlider" min="30" max="120" value="75">
+            </div>
+            <button class="btn" id="lockAlignment">🔓 Lock Alignment</button>
+            <div class="btn-row">
+                <button class="btn secondary" id="resetRotations">Reset Rotations</button>
+                <button class="btn secondary" id="resetView">Reset View</button>
+            </div>
+        </div>
+
+        <!-- Download Section -->
+        <div class="section">
+            <div class="section-title">Export Rotated Images</div>
+            <div class="btn-row">
+                <button class="btn download" id="downloadA" disabled>⬇️ Download A</button>
+                <button class="btn download" id="downloadB" disabled>⬇️ Download B</button>
+            </div>
+            <div id="downloadProgress" class="download-progress"></div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="section">
+            <div class="section-title">Controls</div>
+            <div class="instructions">
+                <strong>Mouse:</strong> Drag to look around, scroll to zoom<br>
+                <strong>Keys:</strong> <span class="key">1</span> Image A, <span class="key">2</span> Image B,
+                <span class="key">3</span> Blend, <span class="key">4</span> Split<br>
+                <span class="key">H</span> toggle panel
+            </div>
+        </div>
+    </div>
+
+    <button class="toggle-btn" id="toggleControls" title="Toggle Controls">☰</button>
+
+    <div id="viewIndicator">Viewing: Image A</div>
+
+    <div id="loading">
+        <div class="spinner"></div>
+        <div>Loading...</div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Three.js scene elements
+        let scene, camera, renderer;
+        let sphereA, sphereB;
+        let isUserInteracting = false;
+        let lon = 0, lat = 0;
+        let onPointerDownLon = 0, onPointerDownLat = 0;
+        let onPointerDownMouseX = 0, onPointerDownMouseY = 0;
+
+        // View mode: 'A', 'B', 'blend', 'split'
+        let viewMode = 'A';
+        let blendAmount = 0.5;
+        let isLocked = false;
+
+        // Store original images for download
+        let originalImageA = null;
+        let originalImageB = null;
+
+        // DOM elements
+        const container = document.getElementById('container');
+        const controls = document.getElementById('controls');
+        const loading = document.getElementById('loading');
+        const viewIndicator = document.getElementById('viewIndicator');
+
+        // Initialize Three.js scene
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a0a0a);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1100);
+            camera.target = new THREE.Vector3(0, 0, 0);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            // Create sphere A (blue theme)
+            const geometryA = new THREE.SphereGeometry(500, 60, 40);
+            geometryA.scale(-1, 1, 1);
+            const materialA = new THREE.MeshBasicMaterial({
+                color: 0x3b82f6,
+                wireframe: true,
+                transparent: true,
+                opacity: 1
+            });
+            sphereA = new THREE.Mesh(geometryA, materialA);
+            scene.add(sphereA);
+
+            // Create sphere B (pink theme)
+            const geometryB = new THREE.SphereGeometry(499, 60, 40); // Slightly smaller to avoid z-fighting
+            geometryB.scale(-1, 1, 1);
+            const materialB = new THREE.MeshBasicMaterial({
+                color: 0xf472b6,
+                wireframe: true,
+                transparent: true,
+                opacity: 0
+            });
+            sphereB = new THREE.Mesh(geometryB, materialB);
+            scene.add(sphereB);
+
+            // Event listeners
+            renderer.domElement.addEventListener('mousedown', onPointerStart);
+            renderer.domElement.addEventListener('mousemove', onPointerMove);
+            renderer.domElement.addEventListener('mouseup', onPointerUp);
+            renderer.domElement.addEventListener('wheel', onWheel, { passive: false });
+            renderer.domElement.addEventListener('touchstart', onTouchStart, { passive: false });
+            renderer.domElement.addEventListener('touchmove', onTouchMove, { passive: false });
+            renderer.domElement.addEventListener('touchend', onPointerUp);
+            window.addEventListener('resize', onWindowResize);
+            document.addEventListener('keydown', onKeyDown);
+
+            animate();
+        }
+
+        // Load image onto a sphere
+        function loadImageToSphere(file, sphere, label) {
+            loading.style.display = 'block';
+
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                // Store original image for download
+                const img = new Image();
+                img.onload = function () {
+                    if (sphere === sphereA) {
+                        originalImageA = img;
+                        document.getElementById('downloadA').disabled = false;
+                    } else {
+                        originalImageB = img;
+                        document.getElementById('downloadB').disabled = false;
+                    }
+                };
+                img.src = event.target.result;
+
+                const texture = new THREE.TextureLoader().load(event.target.result, () => {
+                    loading.style.display = 'none';
+
+                    sphere.material.dispose();
+                    sphere.material = new THREE.MeshBasicMaterial({
+                        map: texture,
+                        transparent: true,
+                        opacity: sphere === sphereA ? 1 : (viewMode === 'B' ? 1 : 0)
+                    });
+                    sphere.material.needsUpdate = true;
+
+                    console.log(`Loaded ${label}: ${file.name}`);
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Create rotation matrix from Euler angles (XYZ order)
+        function createRotationMatrix(pitchDeg, yawDeg, rollDeg) {
+            const pitch = THREE.MathUtils.degToRad(pitchDeg);
+            const yaw = THREE.MathUtils.degToRad(yawDeg);
+            const roll = THREE.MathUtils.degToRad(rollDeg);
+
+            // Rotation matrices
+            const cosP = Math.cos(pitch), sinP = Math.sin(pitch);
+            const cosY = Math.cos(yaw), sinY = Math.sin(yaw);
+            const cosR = Math.cos(roll), sinR = Math.sin(roll);
+
+            // Combined XYZ rotation matrix
+            return [
+                [cosY * cosR, -cosY * sinR, sinY],
+                [sinP * sinY * cosR + cosP * sinR, -sinP * sinY * sinR + cosP * cosR, -sinP * cosY],
+                [-cosP * sinY * cosR + sinP * sinR, cosP * sinY * sinR + sinP * cosR, cosP * cosY]
+            ];
+        }
+
+        // Apply inverse rotation matrix to a 3D vector
+        function applyInverseRotation(x, y, z, matrix) {
+            // Transpose of rotation matrix = inverse
+            return [
+                matrix[0][0] * x + matrix[1][0] * y + matrix[2][0] * z,
+                matrix[0][1] * x + matrix[1][1] * y + matrix[2][1] * z,
+                matrix[0][2] * x + matrix[1][2] * y + matrix[2][2] * z
+            ];
+        }
+
+        // Convert spherical (lon, lat) to 3D direction
+        function sphericalToCartesian(lon, lat) {
+            const phi = (90 - lat) * Math.PI / 180;  // Convert to polar angle
+            const theta = lon * Math.PI / 180;
+            return [
+                Math.sin(phi) * Math.cos(theta),
+                Math.cos(phi),
+                Math.sin(phi) * Math.sin(theta)
+            ];
+        }
+
+        // Convert 3D direction to spherical (lon, lat)
+        function cartesianToSpherical(x, y, z) {
+            const lat = 90 - Math.acos(y) * 180 / Math.PI;
+            const lon = Math.atan2(z, x) * 180 / Math.PI;
+            return [lon, lat];
+        }
+
+        // Bilinear interpolation for smoother sampling
+        function bilinearSample(imageData, width, height, u, v) {
+            // Wrap u coordinate
+            u = ((u % 1) + 1) % 1;
+            // Clamp v coordinate
+            v = Math.max(0, Math.min(1, v));
+
+            const x = u * (width - 1);
+            const y = v * (height - 1);
+
+            const x0 = Math.floor(x);
+            const y0 = Math.floor(y);
+            const x1 = Math.min(x0 + 1, width - 1);
+            const y1 = Math.min(y0 + 1, height - 1);
+
+            const fx = x - x0;
+            const fy = y - y0;
+
+            const idx00 = (y0 * width + x0) * 4;
+            const idx01 = (y0 * width + x1) * 4;
+            const idx10 = (y1 * width + x0) * 4;
+            const idx11 = (y1 * width + x1) * 4;
+
+            const r = (1 - fx) * (1 - fy) * imageData[idx00] +
+                fx * (1 - fy) * imageData[idx01] +
+                (1 - fx) * fy * imageData[idx10] +
+                fx * fy * imageData[idx11];
+
+            const g = (1 - fx) * (1 - fy) * imageData[idx00 + 1] +
+                fx * (1 - fy) * imageData[idx01 + 1] +
+                (1 - fx) * fy * imageData[idx10 + 1] +
+                fx * fy * imageData[idx11 + 1];
+
+            const b = (1 - fx) * (1 - fy) * imageData[idx00 + 2] +
+                fx * (1 - fy) * imageData[idx01 + 2] +
+                (1 - fx) * fy * imageData[idx10 + 2] +
+                fx * fy * imageData[idx11 + 2];
+
+            const a = (1 - fx) * (1 - fy) * imageData[idx00 + 3] +
+                fx * (1 - fy) * imageData[idx01 + 3] +
+                (1 - fx) * fy * imageData[idx10 + 3] +
+                fx * fy * imageData[idx11 + 3];
+
+            return [Math.round(r), Math.round(g), Math.round(b), Math.round(a)];
+        }
+
+        // Generate rotated equirectangular image
+        async function generateRotatedEquirectangular(originalImage, pitch, yaw, roll) {
+            const width = originalImage.width;
+            const height = originalImage.height;
+
+            // Create canvas for source image
+            const srcCanvas = document.createElement('canvas');
+            srcCanvas.width = width;
+            srcCanvas.height = height;
+            const srcCtx = srcCanvas.getContext('2d');
+            srcCtx.drawImage(originalImage, 0, 0);
+            const srcData = srcCtx.getImageData(0, 0, width, height).data;
+
+            // Create canvas for destination image
+            const dstCanvas = document.createElement('canvas');
+            dstCanvas.width = width;
+            dstCanvas.height = height;
+            const dstCtx = dstCanvas.getContext('2d');
+            const dstImageData = dstCtx.createImageData(width, height);
+            const dstData = dstImageData.data;
+
+            // Create rotation matrix
+            const rotMatrix = createRotationMatrix(pitch, yaw, roll);
+
+            // Process in chunks for better UI responsiveness
+            const chunkSize = Math.ceil(height / 10);
+            const progressEl = document.getElementById('downloadProgress');
+
+            for (let startY = 0; startY < height; startY += chunkSize) {
+                const endY = Math.min(startY + chunkSize, height);
+
+                for (let y = startY; y < endY; y++) {
+                    for (let x = 0; x < width; x++) {
+                        // Convert pixel position to lon/lat
+                        const dstLon = (x / width) * 360 - 180;
+                        const dstLat = 90 - (y / height) * 180;
+
+                        // Convert to 3D direction
+                        const [dx, dy, dz] = sphericalToCartesian(dstLon, dstLat);
+
+                        // Apply inverse rotation to find source direction
+                        const [sx, sy, sz] = applyInverseRotation(dx, dy, dz, rotMatrix);
+
+                        // Convert back to lon/lat
+                        const [srcLon, srcLat] = cartesianToSpherical(sx, sy, sz);
+
+                        // Convert to UV coordinates
+                        const u = (srcLon + 180) / 360;
+                        const v = (90 - srcLat) / 180;
+
+                        // Sample source image with bilinear interpolation
+                        const [r, g, b, a] = bilinearSample(srcData, width, height, u, v);
+
+                        // Write to destination
+                        const dstIdx = (y * width + x) * 4;
+                        dstData[dstIdx] = r;
+                        dstData[dstIdx + 1] = g;
+                        dstData[dstIdx + 2] = b;
+                        dstData[dstIdx + 3] = a;
+                    }
+                }
+
+                // Update progress
+                const progress = Math.round((endY / height) * 100);
+                progressEl.textContent = `Processing: ${progress}%`;
+
+                // Yield to allow UI updates
+                await new Promise(resolve => setTimeout(resolve, 0));
+            }
+
+            dstCtx.putImageData(dstImageData, 0, 0);
+            progressEl.textContent = '';
+
+            return dstCanvas;
+        }
+
+        // Download rotated image
+        async function downloadRotatedImage(which) {
+            const isA = which === 'A';
+            const originalImage = isA ? originalImageA : originalImageB;
+            const suffix = isA ? 'A' : 'B';
+
+            if (!originalImage) {
+                alert(`Please load Image ${suffix} first.`);
+                return;
+            }
+
+            const pitch = parseFloat(document.getElementById('pitchSlider' + suffix).value) || 0;
+            const yaw = parseFloat(document.getElementById('yawSlider' + suffix).value) || 0;
+            const roll = parseFloat(document.getElementById('rollSlider' + suffix).value) || 0;
+
+            const btn = document.getElementById('download' + suffix);
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = '⏳ Processing...';
+
+            try {
+                const rotatedCanvas = await generateRotatedEquirectangular(originalImage, pitch, yaw, roll);
+
+                // Create download link
+                const link = document.createElement('a');
+                link.download = `rotated_image_${suffix.toLowerCase()}_p${pitch.toFixed(1)}_y${yaw.toFixed(1)}_r${roll.toFixed(1)}.png`;
+                link.href = rotatedCanvas.toDataURL('image/png');
+                link.click();
+            } catch (error) {
+                console.error('Download failed:', error);
+                alert('Failed to generate rotated image. See console for details.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+
+        // Set sphere rotation using XYZ Euler order (matching the reference code)
+        function setSphereRotation(sphere, pitch, yaw, roll) {
+            sphere.rotation.set(
+                THREE.MathUtils.degToRad(pitch),
+                THREE.MathUtils.degToRad(yaw),
+                THREE.MathUtils.degToRad(roll),
+                'XYZ'
+            );
+        }
+
+        // Update view mode
+        function setViewMode(mode) {
+            viewMode = mode;
+
+            // Update button states
+            document.querySelectorAll('.view-mode-btns .btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('mode' + mode.charAt(0).toUpperCase() + mode.slice(1)).classList.add('active');
+
+            // Show/hide blend controls
+            document.getElementById('blendControls').style.display = (mode === 'blend') ? 'block' : 'none';
+
+            // Update sphere visibility/opacity
+            updateSphereVisibility();
+
+            // Update indicator
+            const modeNames = { 'A': 'Image A', 'B': 'Image B', 'blend': 'Blend Mode', 'split': 'Split View' };
+            viewIndicator.textContent = 'Viewing: ' + modeNames[mode];
+        }
+
+        function updateSphereVisibility() {
+            switch (viewMode) {
+                case 'A':
+                    sphereA.material.opacity = 1;
+                    sphereB.material.opacity = 0;
+                    break;
+                case 'B':
+                    sphereA.material.opacity = 0;
+                    sphereB.material.opacity = 1;
+                    break;
+                case 'blend':
+                    sphereA.material.opacity = 1 - blendAmount;
+                    sphereB.material.opacity = blendAmount;
+                    break;
+                case 'split':
+                    // Split mode handled in render
+                    sphereA.material.opacity = 1;
+                    sphereB.material.opacity = 1;
+                    break;
+            }
+        }
+
+        // Mouse/touch event handlers
+        function onPointerStart(e) {
+            isUserInteracting = true;
+            onPointerDownMouseX = e.clientX;
+            onPointerDownMouseY = e.clientY;
+            onPointerDownLon = lon;
+            onPointerDownLat = lat;
+        }
+
+        function onPointerMove(e) {
+            if (isUserInteracting) {
+                lon = (onPointerDownMouseX - e.clientX) * 0.1 + onPointerDownLon;
+                lat = (e.clientY - onPointerDownMouseY) * 0.1 + onPointerDownLat;
+            }
+        }
+
+        function onPointerUp() {
+            isUserInteracting = false;
+        }
+
+        function onTouchStart(e) {
+            if (e.touches.length === 1) {
+                e.preventDefault();
+                onPointerDownMouseX = e.touches[0].clientX;
+                onPointerDownMouseY = e.touches[0].clientY;
+                onPointerDownLon = lon;
+                onPointerDownLat = lat;
+                isUserInteracting = true;
+            }
+        }
+
+        function onTouchMove(e) {
+            if (e.touches.length === 1 && isUserInteracting) {
+                e.preventDefault();
+                lon = (onPointerDownMouseX - e.touches[0].clientX) * 0.1 + onPointerDownLon;
+                lat = (e.touches[0].clientY - onPointerDownMouseY) * 0.1 + onPointerDownLat;
+            }
+        }
+
+        function onWheel(e) {
+            e.preventDefault();
+            camera.fov += e.deltaY * 0.05;
+            camera.fov = Math.max(30, Math.min(120, camera.fov));
+            camera.updateProjectionMatrix();
+            document.getElementById('fovSlider').value = Math.round(camera.fov);
+            document.getElementById('fovValue').textContent = Math.round(camera.fov);
+        }
+
+        function onKeyDown(e) {
+            switch (e.key) {
+                case 'ArrowUp': lat += 3; break;
+                case 'ArrowDown': lat -= 3; break;
+                case 'ArrowLeft': lon -= 3; break;
+                case 'ArrowRight': lon += 3; break;
+                case '1': setViewMode('A'); break;
+                case '2': setViewMode('B'); break;
+                case '3': setViewMode('blend'); break;
+                case '4': setViewMode('split'); break;
+                case 'h':
+                case 'H':
+                    controls.classList.toggle('hidden');
+                    break;
+            }
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            update();
+        }
+
+        function update() {
+            lat = Math.max(-85, Math.min(85, lat));
+            const phi = THREE.MathUtils.degToRad(90 - lat);
+            const theta = THREE.MathUtils.degToRad(lon);
+
+            camera.target.x = 500 * Math.sin(phi) * Math.cos(theta);
+            camera.target.y = 500 * Math.cos(phi);
+            camera.target.z = 500 * Math.sin(phi) * Math.sin(theta);
+
+            camera.lookAt(camera.target);
+
+            // Update view angle display
+            document.getElementById('lonValue').textContent = lon.toFixed(1);
+            document.getElementById('latValue').textContent = lat.toFixed(1);
+
+            if (viewMode === 'split') {
+                // Split view rendering
+                const width = window.innerWidth;
+                const height = window.innerHeight;
+                const halfWidth = width / 2;
+
+                renderer.setScissorTest(true);
+
+                // Left half - Image A
+                renderer.setViewport(0, 0, halfWidth, height);
+                renderer.setScissor(0, 0, halfWidth, height);
+                sphereA.material.opacity = 1;
+                sphereB.material.opacity = 0;
+                renderer.render(scene, camera);
+
+                // Right half - Image B
+                renderer.setViewport(halfWidth, 0, halfWidth, height);
+                renderer.setScissor(halfWidth, 0, halfWidth, height);
+                sphereA.material.opacity = 0;
+                sphereB.material.opacity = 1;
+                renderer.render(scene, camera);
+
+                renderer.setScissorTest(false);
+                renderer.setViewport(0, 0, width, height);
+            } else {
+                renderer.render(scene, camera);
+            }
+        }
+
+        // UI Event listeners - Image A
+        document.getElementById('imageInputA').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) loadImageToSphere(file, sphereA, 'Image A');
+        });
+
+        // Helper function to sync slider and input, then apply rotation
+        function setupRotationControls(suffix, sphere) {
+            const pitchSlider = document.getElementById('pitchSlider' + suffix);
+            const yawSlider = document.getElementById('yawSlider' + suffix);
+            const rollSlider = document.getElementById('rollSlider' + suffix);
+            const pitchInput = document.getElementById('pitchInput' + suffix);
+            const yawInput = document.getElementById('yawInput' + suffix);
+            const rollInput = document.getElementById('rollInput' + suffix);
+
+            function applyRotation() {
+                const pitch = parseFloat(pitchSlider.value) || 0;
+                const yaw = parseFloat(yawSlider.value) || 0;
+                const roll = parseFloat(rollSlider.value) || 0;
+                setSphereRotation(sphere, pitch, yaw, roll);
+            }
+
+            // Slider events - update input and apply
+            pitchSlider.addEventListener('input', () => {
+                pitchInput.value = pitchSlider.value;
+                applyRotation();
+            });
+            yawSlider.addEventListener('input', () => {
+                yawInput.value = yawSlider.value;
+                applyRotation();
+            });
+            rollSlider.addEventListener('input', () => {
+                rollInput.value = rollSlider.value;
+                applyRotation();
+            });
+
+            // Input events - update slider and apply
+            pitchInput.addEventListener('input', () => {
+                const val = Math.max(-180, Math.min(180, parseFloat(pitchInput.value) || 0));
+                pitchSlider.value = val;
+                applyRotation();
+            });
+            yawInput.addEventListener('input', () => {
+                const val = Math.max(-180, Math.min(180, parseFloat(yawInput.value) || 0));
+                yawSlider.value = val;
+                applyRotation();
+            });
+            rollInput.addEventListener('input', () => {
+                const val = Math.max(-180, Math.min(180, parseFloat(rollInput.value) || 0));
+                rollSlider.value = val;
+                applyRotation();
+            });
+        }
+
+        // UI Event listeners - Image B
+        document.getElementById('imageInputB').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) loadImageToSphere(file, sphereB, 'Image B');
+        });
+
+        // View mode buttons
+        document.getElementById('modeA').addEventListener('click', () => setViewMode('A'));
+        document.getElementById('modeB').addEventListener('click', () => setViewMode('B'));
+        document.getElementById('modeBlend').addEventListener('click', () => setViewMode('blend'));
+        document.getElementById('modeSplit').addEventListener('click', () => setViewMode('split'));
+
+        // Blend slider
+        document.getElementById('blendSlider').addEventListener('input', (e) => {
+            blendAmount = parseFloat(e.target.value) / 100;
+            document.getElementById('blendValue').textContent = e.target.value;
+            updateSphereVisibility();
+        });
+
+        // FOV slider
+        document.getElementById('fovSlider').addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            document.getElementById('fovValue').textContent = val;
+            camera.fov = val;
+            camera.updateProjectionMatrix();
+        });
+
+        // Lock alignment button
+        document.getElementById('lockAlignment').addEventListener('click', () => {
+            isLocked = !isLocked;
+            const lockBtn = document.getElementById('lockAlignment');
+            lockBtn.textContent = isLocked ? '🔒 Unlock Alignment' : '🔓 Lock Alignment';
+            lockBtn.classList.toggle('locked', isLocked);
+
+            // Enable/disable rotation sliders and inputs
+            const controls = [
+                'pitchSliderA', 'yawSliderA', 'rollSliderA',
+                'pitchSliderB', 'yawSliderB', 'rollSliderB',
+                'pitchInputA', 'yawInputA', 'rollInputA',
+                'pitchInputB', 'yawInputB', 'rollInputB'
+            ];
+            controls.forEach(id => {
+                document.getElementById(id).disabled = isLocked;
+            });
+        });
+
+        // Reset buttons
+        document.getElementById('resetRotations').addEventListener('click', () => {
+            if (isLocked) return; // Don't reset if locked
+            ['A', 'B'].forEach(suffix => {
+                document.getElementById('pitchSlider' + suffix).value = 0;
+                document.getElementById('yawSlider' + suffix).value = 0;
+                document.getElementById('rollSlider' + suffix).value = 0;
+                document.getElementById('pitchInput' + suffix).value = 0;
+                document.getElementById('yawInput' + suffix).value = 0;
+                document.getElementById('rollInput' + suffix).value = 0;
+            });
+            setSphereRotation(sphereA, 0, 0, 0);
+            setSphereRotation(sphereB, 0, 0, 0);
+        });
+
+        document.getElementById('resetView').addEventListener('click', () => {
+            lon = 0;
+            lat = 0;
+            camera.fov = 75;
+            camera.updateProjectionMatrix();
+            document.getElementById('fovSlider').value = 75;
+            document.getElementById('fovValue').textContent = 75;
+        });
+
+        document.getElementById('toggleControls').addEventListener('click', () => {
+            controls.classList.toggle('hidden');
+        });
+
+        // Download buttons
+        document.getElementById('downloadA').addEventListener('click', () => downloadRotatedImage('A'));
+        document.getElementById('downloadB').addEventListener('click', () => downloadRotatedImage('B'));
+
+        // Initialize scene first (creates sphereA and sphereB)
+        init();
+
+        // Setup rotation controls AFTER spheres are created
+        setupRotationControls('A', sphereA);
+        setupRotationControls('B', sphereB);
+    </script>
+</body>
+
+</html>

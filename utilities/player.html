@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>360° Video Player</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        #container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        #controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            background: rgba(15, 23, 42, 0.95);
+            padding: 24px;
+            border-radius: 12px;
+            max-width: 380px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            font-size: 0.875rem;
+            margin-bottom: 20px;
+        }
+
+        .section {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .section-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #64748b;
+            margin-bottom: 12px;
+        }
+
+        .upload-area {
+            border: 2px dashed #334155;
+            border-radius: 8px;
+            padding: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 12px;
+        }
+
+        .upload-area:hover {
+            border-color: #60a5fa;
+            background: rgba(96, 165, 250, 0.1);
+        }
+
+        .upload-icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+        .upload-text {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .control-group {
+            margin-bottom: 16px;
+        }
+
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+
+        label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.875rem;
+            color: #cbd5e1;
+            margin-bottom: 8px;
+        }
+
+        .value {
+            color: #60a5fa;
+            font-weight: 600;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: #1e293b;
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(96, 165, 250, 0.4);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn {
+            width: 100%;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn.secondary {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: none;
+            transform: none;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-row .btn {
+            flex: 1;
+        }
+
+        .instructions {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 0.8rem;
+            line-height: 1.6;
+            color: #94a3b8;
+        }
+
+        .instructions strong {
+            color: #e2e8f0;
+        }
+
+        .key {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.75rem;
+        }
+
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            display: none;
+            z-index: 50;
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #60a5fa;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        #videoInfo {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 0.8rem;
+            color: #6ee7b7;
+            display: none;
+            margin-bottom: 12px;
+        }
+
+        .toggle-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.25rem;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s;
+        }
+
+        .toggle-btn:hover {
+            background: rgba(30, 41, 59, 0.9);
+        }
+
+        #controls.hidden {
+            transform: translateX(-420px);
+            opacity: 0;
+        }
+
+        #controls {
+            transition: transform 0.3s, opacity 0.3s;
+        }
+
+        /* Playback controls bar */
+        #playbackBar {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.95);
+            padding: 16px 24px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            min-width: 500px;
+            display: none;
+        }
+
+        .playback-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+
+        .playback-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .play-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border: none;
+            color: white;
+            font-size: 1.25rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            flex-shrink: 0;
+        }
+
+        .play-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+        }
+
+        .timeline {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .timeline input[type="range"] {
+            height: 8px;
+        }
+
+        .time-display {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: #94a3b8;
+            font-family: monospace;
+        }
+
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 120px;
+        }
+
+        .volume-icon {
+            font-size: 1.1rem;
+            cursor: pointer;
+        }
+
+        .volume-control input[type="range"] {
+            width: 80px;
+        }
+
+        .stats-display {
+            display: flex;
+            gap: 16px;
+            font-size: 0.8rem;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .stat-label {
+            color: #64748b;
+        }
+
+        .stat-value {
+            color: #10b981;
+            font-weight: 600;
+            font-family: monospace;
+        }
+
+        .fullscreen-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .fullscreen-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        select {
+            background: #1e293b;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            color: #cbd5e1;
+            padding: 8px 12px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            outline: none;
+        }
+
+        select:hover {
+            border-color: #60a5fa;
+        }
+
+        select:focus {
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="container"></div>
+
+    <div id="controls">
+        <h1>360° Video Player</h1>
+        <p class="subtitle">Interactive equirectangular video player</p>
+
+        <div class="section">
+            <div class="section-title">Video Source</div>
+            <label for="videoInput" class="upload-area">
+                <div class="upload-icon">🎬</div>
+                <div class="upload-text">Upload 360° video</div>
+            </label>
+            <input type="file" id="videoInput" accept="video/*">
+            <div id="videoInfo"></div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Playback Settings</div>
+            <div class="control-group">
+                <label>Playback Rate: <span class="value" id="rateValue">1.0</span>x</label>
+                <input type="range" id="rateSlider" min="0.25" max="2" step="0.25" value="1">
+            </div>
+            <div class="control-group">
+                <label>Target Framerate:</label>
+                <select id="framerateSelect">
+                    <option value="auto">Auto (Native)</option>
+                    <option value="24">24 fps</option>
+                    <option value="25">25 fps</option>
+                    <option value="30" selected>30 fps</option>
+                    <option value="60">60 fps</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label>Loop Video:</label>
+                <div class="btn-row">
+                    <button class="btn secondary" id="loopOn">Loop On</button>
+                    <button class="btn" id="loopOff">Loop Off</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Orientation (XYZ Euler)</div>
+            <div class="control-group">
+                <label>Pitch (X): <span class="value" id="pitchValue">0</span>°</label>
+                <input type="range" id="pitchSlider" min="-180" max="180" value="0">
+            </div>
+            <div class="control-group">
+                <label>Yaw (Y): <span class="value" id="yawValue">0</span>°</label>
+                <input type="range" id="yawSlider" min="-180" max="180" value="0">
+            </div>
+            <div class="control-group">
+                <label>Roll (Z): <span class="value" id="rollValue">0</span>°</label>
+                <input type="range" id="rollSlider" min="-180" max="180" value="0">
+            </div>
+            <button class="btn secondary" id="resetRotation">Reset Orientation</button>
+        </div>
+
+        <div class="section">
+            <div class="section-title">View Controls</div>
+            <div class="control-group">
+                <label>Field of View: <span class="value" id="fovValue">75</span>°</label>
+                <input type="range" id="fovSlider" min="30" max="120" value="75">
+            </div>
+            <button class="btn secondary" id="resetView">Reset View</button>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Controls</div>
+            <div class="instructions">
+                <strong>Mouse:</strong> Drag to look around, scroll to zoom<br>
+                <strong>Keys:</strong> <span class="key">↑↓←→</span> pan view, <span class="key">Space</span>
+                play/pause<br>
+                <span class="key">H</span> toggle panel, <span class="key">F</span> fullscreen
+            </div>
+        </div>
+    </div>
+
+    <button class="toggle-btn" id="toggleControls" title="Toggle Controls">☰</button>
+
+    <div id="playbackBar">
+        <div class="playback-row">
+            <button class="play-btn" id="playPauseBtn" title="Play/Pause">▶</button>
+            <div class="timeline">
+                <input type="range" id="seekSlider" min="0" max="100" value="0" step="0.1">
+                <div class="time-display">
+                    <span id="currentTime">0:00</span>
+                    <span id="duration">0:00</span>
+                </div>
+            </div>
+            <div class="volume-control">
+                <span class="volume-icon" id="volumeIcon">🔊</span>
+                <input type="range" id="volumeSlider" min="0" max="1" step="0.1" value="1">
+            </div>
+            <button class="fullscreen-btn" id="fullscreenBtn" title="Fullscreen">⛶</button>
+        </div>
+        <div class="playback-row">
+            <div class="stats-display">
+                <div class="stat-item">
+                    <span class="stat-label">FPS:</span>
+                    <span class="stat-value" id="fpsDisplay">--</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Resolution:</span>
+                    <span class="stat-value" id="resolutionDisplay">--</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Dropped:</span>
+                    <span class="stat-value" id="droppedDisplay">0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="loading">
+        <div class="spinner"></div>
+        <div>Loading video...</div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Three.js scene elements
+        let scene, camera, renderer, sphere;
+        let isUserInteracting = false;
+        let lon = 0, lat = 0;
+        let onPointerDownLon = 0, onPointerDownLat = 0;
+        let onPointerDownMouseX = 0, onPointerDownMouseY = 0;
+
+        // Video elements
+        let video = null;
+        let videoTexture = null;
+        let isVideoLoaded = false;
+
+        // FPS tracking
+        let lastFrameTime = performance.now();
+        let frameCount = 0;
+        let currentFps = 0;
+        let targetFramerate = 30;
+        let useNativeFramerate = false;
+        let lastRenderTime = 0;
+
+        // DOM elements
+        const container = document.getElementById('container');
+        const controls = document.getElementById('controls');
+        const loading = document.getElementById('loading');
+        const videoInput = document.getElementById('videoInput');
+        const videoInfo = document.getElementById('videoInfo');
+        const playbackBar = document.getElementById('playbackBar');
+        const pitchSlider = document.getElementById('pitchSlider');
+        const yawSlider = document.getElementById('yawSlider');
+        const rollSlider = document.getElementById('rollSlider');
+        const fovSlider = document.getElementById('fovSlider');
+        const rateSlider = document.getElementById('rateSlider');
+        const framerateSelect = document.getElementById('framerateSelect');
+        const seekSlider = document.getElementById('seekSlider');
+        const volumeSlider = document.getElementById('volumeSlider');
+
+        // Initialize Three.js scene
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a0a0a);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1100);
+            camera.target = new THREE.Vector3(0, 0, 0);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            // Create sphere geometry (inverted to view from inside)
+            const geometry = new THREE.SphereGeometry(500, 60, 40);
+            geometry.scale(-1, 1, 1);
+
+            const material = new THREE.MeshBasicMaterial({
+                color: 0x333333,
+                wireframe: true
+            });
+
+            sphere = new THREE.Mesh(geometry, material);
+            scene.add(sphere);
+
+            // Event listeners
+            renderer.domElement.addEventListener('mousedown', onPointerStart);
+            renderer.domElement.addEventListener('mousemove', onPointerMove);
+            renderer.domElement.addEventListener('mouseup', onPointerUp);
+            renderer.domElement.addEventListener('wheel', onWheel, { passive: false });
+            renderer.domElement.addEventListener('touchstart', onTouchStart, { passive: false });
+            renderer.domElement.addEventListener('touchmove', onTouchMove, { passive: false });
+            renderer.domElement.addEventListener('touchend', onPointerUp);
+            window.addEventListener('resize', onWindowResize);
+            document.addEventListener('keydown', onKeyDown);
+
+            animate();
+        }
+
+        // Load video
+        function loadVideo(file) {
+            loading.style.display = 'block';
+
+            // Clean up previous video
+            if (video) {
+                video.pause();
+                video.src = '';
+                video.load();
+            }
+
+            video = document.createElement('video');
+            video.crossOrigin = 'anonymous';
+            video.playsInline = true;
+            video.loop = true;
+
+            const url = URL.createObjectURL(file);
+            video.src = url;
+
+            video.addEventListener('loadedmetadata', () => {
+                loading.style.display = 'none';
+                isVideoLoaded = true;
+
+                // Create video texture
+                videoTexture = new THREE.VideoTexture(video);
+                videoTexture.minFilter = THREE.LinearFilter;
+                videoTexture.magFilter = THREE.LinearFilter;
+                videoTexture.format = THREE.RGBFormat;
+
+                sphere.material.dispose();
+                sphere.material = new THREE.MeshBasicMaterial({ map: videoTexture });
+                sphere.material.needsUpdate = true;
+
+                // Show playback bar
+                playbackBar.style.display = 'block';
+
+                // Update info
+                const sizeMB = (file.size / 1024 / 1024).toFixed(2);
+                videoInfo.style.display = 'block';
+                videoInfo.innerHTML = `✓ Loaded: <strong>${file.name}</strong><br>` +
+                    `${video.videoWidth}×${video.videoHeight} • ${sizeMB} MB`;
+
+                document.getElementById('resolutionDisplay').textContent =
+                    `${video.videoWidth}×${video.videoHeight}`;
+
+                // Update duration
+                updateTimeDisplay();
+
+                console.log('Video loaded:', {
+                    name: file.name,
+                    width: video.videoWidth,
+                    height: video.videoHeight,
+                    duration: video.duration
+                });
+            });
+
+            video.addEventListener('timeupdate', updateTimeDisplay);
+            video.addEventListener('ended', () => {
+                document.getElementById('playPauseBtn').textContent = '▶';
+            });
+
+            video.addEventListener('error', (e) => {
+                loading.style.display = 'none';
+                console.error('Video error:', e);
+                alert('Error loading video. Please try a different format.');
+            });
+
+            video.load();
+        }
+
+        // Format time as M:SS
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return '0:00';
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // Update time display
+        function updateTimeDisplay() {
+            if (!video) return;
+            document.getElementById('currentTime').textContent = formatTime(video.currentTime);
+            document.getElementById('duration').textContent = formatTime(video.duration);
+
+            if (!isUserInteracting) {
+                seekSlider.value = (video.currentTime / video.duration) * 100 || 0;
+            }
+        }
+
+        // Toggle play/pause
+        function togglePlayPause() {
+            if (!video || !isVideoLoaded) return;
+
+            if (video.paused) {
+                video.play();
+                document.getElementById('playPauseBtn').textContent = '⏸';
+            } else {
+                video.pause();
+                document.getElementById('playPauseBtn').textContent = '▶';
+            }
+        }
+
+        // Set sphere rotation using XYZ Euler order
+        function setSphereRotation(pitch, yaw, roll) {
+            sphere.rotation.set(
+                THREE.MathUtils.degToRad(pitch),
+                THREE.MathUtils.degToRad(yaw),
+                THREE.MathUtils.degToRad(roll),
+                'XYZ'
+            );
+
+            pitchSlider.value = pitch;
+            yawSlider.value = yaw;
+            rollSlider.value = roll;
+            document.getElementById('pitchValue').textContent = pitch;
+            document.getElementById('yawValue').textContent = yaw;
+            document.getElementById('rollValue').textContent = roll;
+        }
+
+        // Mouse/touch event handlers
+        function onPointerStart(e) {
+            isUserInteracting = true;
+            onPointerDownMouseX = e.clientX;
+            onPointerDownMouseY = e.clientY;
+            onPointerDownLon = lon;
+            onPointerDownLat = lat;
+        }
+
+        function onPointerMove(e) {
+            if (isUserInteracting) {
+                lon = (onPointerDownMouseX - e.clientX) * 0.1 + onPointerDownLon;
+                lat = (e.clientY - onPointerDownMouseY) * 0.1 + onPointerDownLat;
+            }
+        }
+
+        function onPointerUp() {
+            isUserInteracting = false;
+        }
+
+        function onTouchStart(e) {
+            if (e.touches.length === 1) {
+                e.preventDefault();
+                onPointerDownMouseX = e.touches[0].clientX;
+                onPointerDownMouseY = e.touches[0].clientY;
+                onPointerDownLon = lon;
+                onPointerDownLat = lat;
+                isUserInteracting = true;
+            }
+        }
+
+        function onTouchMove(e) {
+            if (e.touches.length === 1 && isUserInteracting) {
+                e.preventDefault();
+                lon = (onPointerDownMouseX - e.touches[0].clientX) * 0.1 + onPointerDownLon;
+                lat = (e.touches[0].clientY - onPointerDownMouseY) * 0.1 + onPointerDownLat;
+            }
+        }
+
+        function onWheel(e) {
+            e.preventDefault();
+            camera.fov += e.deltaY * 0.05;
+            camera.fov = Math.max(30, Math.min(120, camera.fov));
+            camera.updateProjectionMatrix();
+            fovSlider.value = Math.round(camera.fov);
+            document.getElementById('fovValue').textContent = Math.round(camera.fov);
+        }
+
+        function onKeyDown(e) {
+            switch (e.key) {
+                case 'ArrowUp':
+                    lat += 3;
+                    break;
+                case 'ArrowDown':
+                    lat -= 3;
+                    break;
+                case 'ArrowLeft':
+                    lon -= 3;
+                    break;
+                case 'ArrowRight':
+                    lon += 3;
+                    break;
+                case ' ':
+                    e.preventDefault();
+                    togglePlayPause();
+                    break;
+                case 'h':
+                case 'H':
+                    controls.classList.toggle('hidden');
+                    break;
+                case 'f':
+                case 'F':
+                    toggleFullscreen();
+                    break;
+            }
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // Toggle fullscreen
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // Animation loop with framerate control
+        function animate(timestamp) {
+            requestAnimationFrame(animate);
+
+            // Framerate limiting
+            if (!useNativeFramerate && targetFramerate > 0) {
+                const frameInterval = 1000 / targetFramerate;
+                if (timestamp - lastRenderTime < frameInterval) {
+                    return;
+                }
+                lastRenderTime = timestamp - ((timestamp - lastRenderTime) % frameInterval);
+            }
+
+            // FPS calculation
+            frameCount++;
+            const now = performance.now();
+            if (now - lastFrameTime >= 1000) {
+                currentFps = frameCount;
+                frameCount = 0;
+                lastFrameTime = now;
+                document.getElementById('fpsDisplay').textContent = currentFps;
+
+                // Update dropped frames (if video API supports it)
+                if (video && video.getVideoPlaybackQuality) {
+                    const quality = video.getVideoPlaybackQuality();
+                    document.getElementById('droppedDisplay').textContent = quality.droppedVideoFrames || 0;
+                }
+            }
+
+            update();
+        }
+
+        function update() {
+            lat = Math.max(-85, Math.min(85, lat));
+            const phi = THREE.MathUtils.degToRad(90 - lat);
+            const theta = THREE.MathUtils.degToRad(lon);
+
+            camera.target.x = 500 * Math.sin(phi) * Math.cos(theta);
+            camera.target.y = 500 * Math.cos(phi);
+            camera.target.z = 500 * Math.sin(phi) * Math.sin(theta);
+
+            camera.lookAt(camera.target);
+
+            // Update video texture
+            if (videoTexture && video && !video.paused) {
+                videoTexture.needsUpdate = true;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // UI Event listeners
+        videoInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) loadVideo(file);
+        });
+
+        document.getElementById('playPauseBtn').addEventListener('click', togglePlayPause);
+
+        seekSlider.addEventListener('input', () => {
+            if (video && isVideoLoaded) {
+                const seekTime = (seekSlider.value / 100) * video.duration;
+                video.currentTime = seekTime;
+            }
+        });
+
+        volumeSlider.addEventListener('input', () => {
+            if (video) {
+                video.volume = volumeSlider.value;
+                updateVolumeIcon();
+            }
+        });
+
+        function updateVolumeIcon() {
+            const icon = document.getElementById('volumeIcon');
+            if (video.muted || video.volume === 0) {
+                icon.textContent = '🔇';
+            } else if (video.volume < 0.5) {
+                icon.textContent = '🔉';
+            } else {
+                icon.textContent = '🔊';
+            }
+        }
+
+        document.getElementById('volumeIcon').addEventListener('click', () => {
+            if (video) {
+                video.muted = !video.muted;
+                updateVolumeIcon();
+            }
+        });
+
+        rateSlider.addEventListener('input', () => {
+            const rate = parseFloat(rateSlider.value);
+            document.getElementById('rateValue').textContent = rate.toFixed(2);
+            if (video) {
+                video.playbackRate = rate;
+            }
+        });
+
+        framerateSelect.addEventListener('change', () => {
+            const value = framerateSelect.value;
+            if (value === 'auto') {
+                useNativeFramerate = true;
+                targetFramerate = 0;
+            } else {
+                useNativeFramerate = false;
+                targetFramerate = parseInt(value);
+            }
+        });
+
+        document.getElementById('loopOn').addEventListener('click', () => {
+            if (video) video.loop = true;
+            document.getElementById('loopOn').classList.remove('secondary');
+            document.getElementById('loopOn').classList.add('');
+            document.getElementById('loopOff').classList.add('secondary');
+        });
+
+        document.getElementById('loopOff').addEventListener('click', () => {
+            if (video) video.loop = false;
+            document.getElementById('loopOff').classList.remove('secondary');
+            document.getElementById('loopOn').classList.add('secondary');
+        });
+
+        // Rotation sliders
+        pitchSlider.addEventListener('input', () => {
+            const val = parseFloat(pitchSlider.value) || 0;
+            document.getElementById('pitchValue').textContent = val;
+            sphere.rotation.x = THREE.MathUtils.degToRad(val);
+        });
+
+        yawSlider.addEventListener('input', () => {
+            const val = parseFloat(yawSlider.value) || 0;
+            document.getElementById('yawValue').textContent = val;
+            sphere.rotation.y = THREE.MathUtils.degToRad(val);
+        });
+
+        rollSlider.addEventListener('input', () => {
+            const val = parseFloat(rollSlider.value) || 0;
+            document.getElementById('rollValue').textContent = val;
+            sphere.rotation.z = THREE.MathUtils.degToRad(val);
+        });
+
+        fovSlider.addEventListener('input', () => {
+            const val = parseFloat(fovSlider.value);
+            document.getElementById('fovValue').textContent = val;
+            camera.fov = val;
+            camera.updateProjectionMatrix();
+        });
+
+        document.getElementById('resetRotation').addEventListener('click', () => {
+            setSphereRotation(0, 0, 0);
+        });
+
+        document.getElementById('resetView').addEventListener('click', () => {
+            lon = 0;
+            lat = 0;
+            camera.fov = 75;
+            camera.updateProjectionMatrix();
+            fovSlider.value = 75;
+            document.getElementById('fovValue').textContent = 75;
+        });
+
+        document.getElementById('toggleControls').addEventListener('click', () => {
+            controls.classList.toggle('hidden');
+        });
+
+        document.getElementById('fullscreenBtn').addEventListener('click', toggleFullscreen);
+
+        // Initialize
+        init();
+    </script>
+</body>
+
+</html>

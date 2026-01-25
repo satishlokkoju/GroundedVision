@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>360° Image Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        #container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        #controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            background: rgba(15, 23, 42, 0.95);
+            padding: 24px;
+            border-radius: 12px;
+            max-width: 380px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            font-size: 0.875rem;
+            margin-bottom: 20px;
+        }
+
+        .section {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .section-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #64748b;
+            margin-bottom: 12px;
+        }
+
+        .upload-area {
+            border: 2px dashed #334155;
+            border-radius: 8px;
+            padding: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 12px;
+        }
+
+        .upload-area:hover {
+            border-color: #60a5fa;
+            background: rgba(96, 165, 250, 0.1);
+        }
+
+        .upload-icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+        .upload-text {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .control-group {
+            margin-bottom: 16px;
+        }
+
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+
+        label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.875rem;
+            color: #cbd5e1;
+            margin-bottom: 8px;
+        }
+
+        .value {
+            color: #60a5fa;
+            font-weight: 600;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: #1e293b;
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(96, 165, 250, 0.4);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn {
+            width: 100%;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn.secondary {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: none;
+        }
+
+        .instructions {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 0.8rem;
+            line-height: 1.6;
+            color: #94a3b8;
+        }
+
+        .instructions strong {
+            color: #e2e8f0;
+        }
+
+        .key {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.75rem;
+        }
+
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            display: none;
+            z-index: 50;
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #60a5fa;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        #imageInfo {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 0.8rem;
+            color: #6ee7b7;
+            display: none;
+            margin-bottom: 12px;
+        }
+
+        .toggle-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.25rem;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s;
+        }
+
+        .toggle-btn:hover {
+            background: rgba(30, 41, 59, 0.9);
+        }
+
+        #controls.hidden {
+            transform: translateX(-420px);
+            opacity: 0;
+        }
+
+        #controls {
+            transition: transform 0.3s, opacity 0.3s;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="container"></div>
+
+    <div id="controls">
+        <h1>360° Image Viewer</h1>
+        <p class="subtitle">Interactive equirectangular panorama viewer</p>
+
+        <div class="section">
+            <div class="section-title">Image Source</div>
+            <label for="imageInput" class="upload-area">
+                <div class="upload-icon">🌐</div>
+                <div class="upload-text">Upload 360° image</div>
+            </label>
+            <input type="file" id="imageInput" accept="image/*">
+            <div id="imageInfo"></div>
+            <button class="btn secondary" id="jsonBtn">Load from JSON</button>
+            <input type="file" id="jsonInput" accept=".json" style="display:none">
+        </div>
+
+        <div class="section">
+            <div class="section-title">Orientation (XYZ Euler)</div>
+            <div class="control-group">
+                <label>Pitch (X): <span class="value" id="pitchValue">0</span>°</label>
+                <input type="range" id="pitchSlider" min="-180" max="180" value="0">
+            </div>
+            <div class="control-group">
+                <label>Yaw (Y): <span class="value" id="yawValue">0</span>°</label>
+                <input type="range" id="yawSlider" min="-180" max="180" value="0">
+            </div>
+            <div class="control-group">
+                <label>Roll (Z): <span class="value" id="rollValue">0</span>°</label>
+                <input type="range" id="rollSlider" min="-180" max="180" value="0">
+            </div>
+            <button class="btn secondary" id="resetRotation">Reset Orientation</button>
+        </div>
+
+        <div class="section">
+            <div class="section-title">View Controls</div>
+            <div class="control-group">
+                <label>Field of View: <span class="value" id="fovValue">75</span>°</label>
+                <input type="range" id="fovSlider" min="30" max="120" value="75">
+            </div>
+            <button class="btn secondary" id="resetView">Reset View</button>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Controls</div>
+            <div class="instructions">
+                <strong>Mouse:</strong> Drag to look around, scroll to zoom<br>
+                <strong>Keys:</strong> <span class="key">↑↓←→</span> pan view, <span class="key">H</span> toggle panel
+            </div>
+        </div>
+    </div>
+
+    <button class="toggle-btn" id="toggleControls" title="Toggle Controls">☰</button>
+
+    <div id="loading">
+        <div class="spinner"></div>
+        <div>Loading image...</div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Three.js scene elements
+        let scene, camera, renderer, sphere;
+        let isUserInteracting = false;
+        let lon = 0, lat = 0;
+        let onPointerDownLon = 0, onPointerDownLat = 0;
+        let onPointerDownMouseX = 0, onPointerDownMouseY = 0;
+
+        // Current image data
+        let currentImage = null;
+        let imagesData = null;
+
+        // DOM elements
+        const container = document.getElementById('container');
+        const controls = document.getElementById('controls');
+        const loading = document.getElementById('loading');
+        const imageInput = document.getElementById('imageInput');
+        const jsonInput = document.getElementById('jsonInput');
+        const imageInfo = document.getElementById('imageInfo');
+        const pitchSlider = document.getElementById('pitchSlider');
+        const yawSlider = document.getElementById('yawSlider');
+        const rollSlider = document.getElementById('rollSlider');
+        const fovSlider = document.getElementById('fovSlider');
+
+        // Initialize Three.js scene
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a0a0a);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1100);
+            camera.target = new THREE.Vector3(0, 0, 0);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            // Create sphere geometry (inverted to view from inside)
+            const geometry = new THREE.SphereGeometry(500, 60, 40);
+            geometry.scale(-1, 1, 1);
+
+            const material = new THREE.MeshBasicMaterial({
+                color: 0x333333,
+                wireframe: true
+            });
+
+            sphere = new THREE.Mesh(geometry, material);
+            scene.add(sphere);
+
+            // Event listeners
+            renderer.domElement.addEventListener('mousedown', onPointerStart);
+            renderer.domElement.addEventListener('mousemove', onPointerMove);
+            renderer.domElement.addEventListener('mouseup', onPointerUp);
+            renderer.domElement.addEventListener('wheel', onWheel, { passive: false });
+            renderer.domElement.addEventListener('touchstart', onTouchStart, { passive: false });
+            renderer.domElement.addEventListener('touchmove', onTouchMove, { passive: false });
+            renderer.domElement.addEventListener('touchend', onPointerUp);
+            window.addEventListener('resize', onWindowResize);
+            document.addEventListener('keydown', onKeyDown);
+
+            animate();
+        }
+
+        // Load image onto sphere
+        function loadImage(file) {
+            loading.style.display = 'block';
+
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                const texture = new THREE.TextureLoader().load(event.target.result, () => {
+                    loading.style.display = 'none';
+
+                    sphere.material.dispose();
+                    sphere.material = new THREE.MeshBasicMaterial({ map: texture });
+                    sphere.material.needsUpdate = true;
+
+                    currentImage = {
+                        name: file.name,
+                        size: (file.size / 1024 / 1024).toFixed(2)
+                    };
+
+                    imageInfo.style.display = 'block';
+                    imageInfo.textContent = `✓ Loaded: ${file.name} (${currentImage.size} MB)`;
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Load image from URL (for JSON-based loading)
+        function loadImageFromUrl(url, rotation = { pitch: 0, yaw: 0, roll: 0 }) {
+            loading.style.display = 'block';
+
+            const texture = new THREE.TextureLoader().load(url,
+                () => {
+                    loading.style.display = 'none';
+
+                    sphere.material.dispose();
+                    sphere.material = new THREE.MeshBasicMaterial({ map: texture });
+                    sphere.material.needsUpdate = true;
+
+                    // Apply rotation using XYZ Euler order (matching provided code)
+                    setSphereRotation(rotation.pitch, rotation.yaw, rotation.roll);
+                },
+                undefined,
+                (error) => {
+                    loading.style.display = 'none';
+                    console.error('Error loading image:', error);
+                    alert('Error loading image from URL');
+                }
+            );
+        }
+
+        // Set sphere rotation using XYZ Euler order
+        function setSphereRotation(pitch, yaw, roll) {
+            sphere.rotation.set(
+                THREE.MathUtils.degToRad(pitch),
+                THREE.MathUtils.degToRad(yaw),
+                THREE.MathUtils.degToRad(roll),
+                'XYZ'
+            );
+
+            // Update sliders and display values
+            pitchSlider.value = pitch;
+            yawSlider.value = yaw;
+            rollSlider.value = roll;
+            document.getElementById('pitchValue').textContent = pitch;
+            document.getElementById('yawValue').textContent = yaw;
+            document.getElementById('rollValue').textContent = roll;
+        }
+
+        // Load images from JSON metadata (matching provided load function pattern)
+        async function loadFromJson(file) {
+            try {
+                const text = await file.text();
+                const imgData = JSON.parse(text);
+                imagesData = imgData;
+
+                const imageNames = Object.keys(imgData);
+                if (imageNames.length === 0) {
+                    alert('No images found in JSON');
+                    return;
+                }
+
+                // For now, load the first image
+                const firstImageName = imageNames[0];
+                const imageEntry = imgData[firstImageName];
+
+                // Extract rotation [pitch, yaw, roll]
+                const rotation = imageEntry.rotation || [0, 0, 0];
+                const pitch = parseFloat(rotation[0]) || 0;
+                const yaw = parseFloat(rotation[1]) || 0;
+                const roll = parseFloat(rotation[2]) || 0;
+
+                // Try to construct image URL (assumes images are relative to JSON location)
+                // Adjust this based on your actual file structure
+                const imageUrl = imageEntry.file || imageEntry.path || `images/${firstImageName}`;
+
+                imageInfo.style.display = 'block';
+                imageInfo.innerHTML = `📂 JSON loaded: ${imageNames.length} images<br>` +
+                    `Currently viewing: ${firstImageName}<br>` +
+                    `Rotation: P=${pitch}° Y=${yaw}° R=${roll}°`;
+
+                // Note: For local files, you may need to adjust how images are loaded
+                // This implementation expects the image path to be accessible
+                setSphereRotation(pitch, yaw, roll);
+
+                console.log('Loaded image data:', {
+                    name: firstImageName,
+                    position: imageEntry.position,
+                    rotation: { pitch, yaw, roll }
+                });
+
+            } catch (error) {
+                console.error('Error parsing JSON:', error);
+                alert('Error parsing JSON file: ' + error.message);
+            }
+        }
+
+        // Mouse/touch event handlers
+        function onPointerStart(e) {
+            isUserInteracting = true;
+            onPointerDownMouseX = e.clientX;
+            onPointerDownMouseY = e.clientY;
+            onPointerDownLon = lon;
+            onPointerDownLat = lat;
+        }
+
+        function onPointerMove(e) {
+            if (isUserInteracting) {
+                lon = (onPointerDownMouseX - e.clientX) * 0.1 + onPointerDownLon;
+                lat = (e.clientY - onPointerDownMouseY) * 0.1 + onPointerDownLat;
+            }
+        }
+
+        function onPointerUp() {
+            isUserInteracting = false;
+        }
+
+        function onTouchStart(e) {
+            if (e.touches.length === 1) {
+                e.preventDefault();
+                onPointerDownMouseX = e.touches[0].clientX;
+                onPointerDownMouseY = e.touches[0].clientY;
+                onPointerDownLon = lon;
+                onPointerDownLat = lat;
+                isUserInteracting = true;
+            }
+        }
+
+        function onTouchMove(e) {
+            if (e.touches.length === 1 && isUserInteracting) {
+                e.preventDefault();
+                lon = (onPointerDownMouseX - e.touches[0].clientX) * 0.1 + onPointerDownLon;
+                lat = (e.touches[0].clientY - onPointerDownMouseY) * 0.1 + onPointerDownLat;
+            }
+        }
+
+        function onWheel(e) {
+            e.preventDefault();
+            camera.fov += e.deltaY * 0.05;
+            camera.fov = Math.max(30, Math.min(120, camera.fov));
+            camera.updateProjectionMatrix();
+            fovSlider.value = Math.round(camera.fov);
+            document.getElementById('fovValue').textContent = Math.round(camera.fov);
+        }
+
+        function onKeyDown(e) {
+            switch (e.key) {
+                case 'ArrowUp':
+                    lat += 3;
+                    break;
+                case 'ArrowDown':
+                    lat -= 3;
+                    break;
+                case 'ArrowLeft':
+                    lon -= 3;
+                    break;
+                case 'ArrowRight':
+                    lon += 3;
+                    break;
+                case 'h':
+                case 'H':
+                    controls.classList.toggle('hidden');
+                    break;
+            }
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            update();
+        }
+
+        function update() {
+            lat = Math.max(-85, Math.min(85, lat));
+            const phi = THREE.MathUtils.degToRad(90 - lat);
+            const theta = THREE.MathUtils.degToRad(lon);
+
+            camera.target.x = 500 * Math.sin(phi) * Math.cos(theta);
+            camera.target.y = 500 * Math.cos(phi);
+            camera.target.z = 500 * Math.sin(phi) * Math.sin(theta);
+
+            camera.lookAt(camera.target);
+            renderer.render(scene, camera);
+        }
+
+        // UI Event listeners
+        imageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) loadImage(file);
+        });
+
+        document.getElementById('jsonBtn').addEventListener('click', () => {
+            jsonInput.click();
+        });
+
+        jsonInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) loadFromJson(file);
+        });
+
+        // Rotation sliders
+        pitchSlider.addEventListener('input', () => {
+            const val = parseFloat(pitchSlider.value) || 0;
+            document.getElementById('pitchValue').textContent = val;
+            sphere.rotation.x = THREE.MathUtils.degToRad(val);
+        });
+
+        yawSlider.addEventListener('input', () => {
+            const val = parseFloat(yawSlider.value) || 0;
+            document.getElementById('yawValue').textContent = val;
+            sphere.rotation.y = THREE.MathUtils.degToRad(val);
+        });
+
+        rollSlider.addEventListener('input', () => {
+            const val = parseFloat(rollSlider.value) || 0;
+            document.getElementById('rollValue').textContent = val;
+            sphere.rotation.z = THREE.MathUtils.degToRad(val);
+        });
+
+        fovSlider.addEventListener('input', () => {
+            const val = parseFloat(fovSlider.value);
+            document.getElementById('fovValue').textContent = val;
+            camera.fov = val;
+            camera.updateProjectionMatrix();
+        });
+
+        document.getElementById('resetRotation').addEventListener('click', () => {
+            setSphereRotation(0, 0, 0);
+        });
+
+        document.getElementById('resetView').addEventListener('click', () => {
+            lon = 0;
+            lat = 0;
+            camera.fov = 75;
+            camera.updateProjectionMatrix();
+            fovSlider.value = 75;
+            document.getElementById('fovValue').textContent = 75;
+        });
+
+        document.getElementById('toggleControls').addEventListener('click', () => {
+            controls.classList.toggle('hidden');
+        });
+
+        // Initialize
+        init();
+    </script>
+</body>
+
+</html>

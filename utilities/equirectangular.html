@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate Non-Overlapping Perspective Views</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            min-height: 100vh;
+            padding: 2rem;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: rgba(15, 23, 42, 0.95);
+            border-radius: 12px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+            padding: 24px;
+            margin-bottom: 1.5rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .section-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #64748b;
+            margin-bottom: 12px;
+        }
+
+        .upload-area {
+            border: 2px dashed #334155;
+            border-radius: 8px;
+            padding: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .upload-area:hover {
+            border-color: #60a5fa;
+            background: rgba(96, 165, 250, 0.1);
+        }
+
+        .upload-icon {
+            font-size: 2.5rem;
+            margin-bottom: 8px;
+        }
+
+        .upload-text {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        #fileInfo {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 0.85rem;
+            color: #6ee7b7;
+            display: none;
+            margin-top: 12px;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .control-group {
+            margin-bottom: 16px;
+        }
+
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+
+        label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.875rem;
+            color: #cbd5e1;
+            margin-bottom: 8px;
+        }
+
+        .value {
+            color: #60a5fa;
+            font-weight: 600;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: #1e293b;
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(96, 165, 250, 0.4);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            cursor: pointer;
+            border: none;
+        }
+
+        select {
+            width: 100%;
+            padding: 10px 12px;
+            background: #1e293b;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #cbd5e1;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        select:hover {
+            border-color: #60a5fa;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-right: 1rem;
+            margin-top: 1rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn.secondary {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: none;
+            transform: none;
+        }
+
+        .grid-container {
+            display: grid;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .view-item {
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+            background: #1e293b;
+        }
+
+        .view-item canvas {
+            width: 100%;
+            display: block;
+        }
+
+        .view-label {
+            position: absolute;
+            top: 0.5rem;
+            left: 0.5rem;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            backdrop-filter: blur(4px);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        h2 {
+            font-size: 1.25rem;
+            margin-bottom: 1.5rem;
+            color: #e2e8f0;
+        }
+
+        .info-box {
+            background: rgba(96, 165, 250, 0.1);
+            border-left: 3px solid #60a5fa;
+            padding: 12px 16px;
+            margin-top: 1rem;
+            border-radius: 4px;
+            color: #94a3b8;
+            font-size: 0.85rem;
+        }
+
+        .progress {
+            margin-top: 1rem;
+            padding: 16px;
+            background: #1e293b;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .progress.active {
+            display: block;
+        }
+
+        .progress-text {
+            color: #cbd5e1;
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            transition: width 0.3s;
+        }
+
+        .instructions {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 0.8rem;
+            line-height: 1.6;
+            color: #94a3b8;
+            margin-top: 1rem;
+        }
+
+        .instructions strong {
+            color: #e2e8f0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Non-Overlapping View Generator</h1>
+        <p class="subtitle">Automatically generate grid of perspective views covering the entire 360° panorama</p>
+
+        <div class="card">
+            <div class="section-title">Image Source</div>
+            <label for="fileInput" class="upload-area">
+                <div class="upload-icon">🌐</div>
+                <div class="upload-text">Upload equirectangular image</div>
+            </label>
+            <input type="file" id="fileInput" accept="image/*">
+            <div id="fileInfo"></div>
+        </div>
+
+        <div id="controlsCard" class="card hidden">
+            <div class="section-title">Grid Configuration</div>
+            <div class="controls">
+                <div class="control-group">
+                    <label>Field of View: <span class="value" id="fovValue">90</span>°</label>
+                    <input type="range" id="fov" min="60" max="120" value="90">
+                </div>
+
+                <div class="control-group">
+                    <label>Layout Pattern:</label>
+                    <select id="layout">
+                        <option value="equator">Equator Band (4×1)</option>
+                        <option value="cube" selected>Cube Map (6 faces)</option>
+                        <option value="standard">Standard Grid (8×4)</option>
+                        <option value="dense">Dense Grid (12×6)</option>
+                        <option value="custom">Custom Grid</option>
+                    </select>
+                </div>
+
+                <div class="control-group" id="customHorizGroup" style="display: none;">
+                    <label>Horizontal Views: <span class="value" id="horizValue">8</span></label>
+                    <input type="range" id="horizViews" min="2" max="16" value="8">
+                </div>
+
+                <div class="control-group" id="customVertGroup" style="display: none;">
+                    <label>Vertical Views: <span class="value" id="vertValue">4</span></label>
+                    <input type="range" id="vertViews" min="1" max="8" value="4">
+                </div>
+
+                <div class="control-group">
+                    <label>View Size: <span class="value" id="sizeValue">512</span>px</label>
+                    <input type="range" id="viewSize" min="256" max="1024" step="128" value="512">
+                </div>
+            </div>
+
+            <div class="info-box" id="infoBox">
+                Cube Map: 6 views covering all directions (front, back, left, right, up, down)
+            </div>
+
+            <button class="btn" onclick="generateViews()">Generate Views</button>
+            <button class="btn secondary" onclick="downloadAll()">Download All as ZIP</button>
+
+            <div class="progress" id="progress">
+                <div class="progress-text">Generating views: <span id="progressText">0%</span></div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+
+            <div class="instructions">
+                <strong>Tip:</strong> Use Cube Map for standard 6-face coverage, or Dense Grid for detailed analysis.
+                Higher FOV values will slightly overlap views but provide more context.
+            </div>
+        </div>
+
+        <div id="outputCard" class="card hidden">
+            <h2>Generated Views (<span id="viewCount">0</span> total)</h2>
+            <div class="grid-container" id="gridContainer"></div>
+        </div>
+
+        <canvas id="sourceCanvas" class="hidden"></canvas>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script>
+        let sourceImage = null;
+        let generatedCanvases = [];
+        let currentFileName = '';
+
+        const fileInput = document.getElementById('fileInput');
+        const controlsCard = document.getElementById('controlsCard');
+        const outputCard = document.getElementById('outputCard');
+        const sourceCanvas = document.getElementById('sourceCanvas');
+        const layoutSelect = document.getElementById('layout');
+        const fovSlider = document.getElementById('fov');
+        const viewSizeSlider = document.getElementById('viewSize');
+        const horizSlider = document.getElementById('horizViews');
+        const vertSlider = document.getElementById('vertViews');
+        const gridContainer = document.getElementById('gridContainer');
+        const infoBox = document.getElementById('infoBox');
+        const progressDiv = document.getElementById('progress');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const fileInfo = document.getElementById('fileInfo');
+
+        fileInput.addEventListener('change', handleImageUpload);
+        layoutSelect.addEventListener('change', updateLayoutInfo);
+        fovSlider.addEventListener('input', () => {
+            document.getElementById('fovValue').textContent = fovSlider.value;
+        });
+        viewSizeSlider.addEventListener('input', () => {
+            document.getElementById('sizeValue').textContent = viewSizeSlider.value;
+        });
+        horizSlider.addEventListener('input', () => {
+            document.getElementById('horizValue').textContent = horizSlider.value;
+        });
+        vertSlider.addEventListener('input', () => {
+            document.getElementById('vertValue').textContent = vertSlider.value;
+        });
+
+        function updateLayoutInfo() {
+            const layout = layoutSelect.value;
+            const customGroups = document.querySelectorAll('#customHorizGroup, #customVertGroup');
+
+            if (layout === 'custom') {
+                customGroups.forEach(g => g.style.display = 'flex');
+                infoBox.textContent = 'Custom grid: Specify horizontal and vertical divisions';
+            } else {
+                customGroups.forEach(g => g.style.display = 'none');
+                const info = {
+                    'equator': 'Equator Band: 4 views around the horizon at 0° pitch',
+                    'cube': 'Cube Map: 6 views covering all directions (front, back, left, right, up, down)',
+                    'standard': 'Standard Grid: 8×4 = 32 views with minimal overlap',
+                    'dense': 'Dense Grid: 12×6 = 72 views with comprehensive coverage'
+                };
+                infoBox.textContent = info[layout];
+            }
+        }
+
+        function handleImageUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            currentFileName = file.name;
+            const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
+
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                const img = new Image();
+                img.onload = function () {
+                    sourceCanvas.width = img.width;
+                    sourceCanvas.height = img.height;
+                    const ctx = sourceCanvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    sourceImage = img;
+                    controlsCard.classList.remove('hidden');
+
+                    // Display file information
+                    fileInfo.style.display = 'block';
+                    fileInfo.innerHTML = `✓ Loaded: <strong>${currentFileName}</strong> (${fileSizeMB} MB, ${img.width}×${img.height}px)`;
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function getViewpoints() {
+            const layout = layoutSelect.value;
+            const fov = parseFloat(fovSlider.value);
+
+            if (layout === 'equator') {
+                return [
+                    { yaw: 0, pitch: 0, name: 'Front' },
+                    { yaw: 90, pitch: 0, name: 'Right' },
+                    { yaw: 180, pitch: 0, name: 'Back' },
+                    { yaw: -90, pitch: 0, name: 'Left' }
+                ];
+            } else if (layout === 'cube') {
+                return [
+                    { yaw: 0, pitch: 0, name: 'Front' },
+                    { yaw: 90, pitch: 0, name: 'Right' },
+                    { yaw: 180, pitch: 0, name: 'Back' },
+                    { yaw: -90, pitch: 0, name: 'Left' },
+                    { yaw: 0, pitch: 90, name: 'Up' },
+                    { yaw: 0, pitch: -90, name: 'Down' }
+                ];
+            } else {
+                // Grid-based layouts
+                let hCount, vCount;
+                if (layout === 'standard') {
+                    hCount = 8; vCount = 4;
+                } else if (layout === 'dense') {
+                    hCount = 12; vCount = 6;
+                } else { // custom
+                    hCount = parseInt(horizSlider.value);
+                    vCount = parseInt(vertSlider.value);
+                }
+
+                const views = [];
+                const yawStep = 360 / hCount;
+                const pitchRange = 180;
+                const pitchStep = pitchRange / (vCount + 1);
+
+                for (let v = 0; v < vCount; v++) {
+                    const pitch = 90 - pitchStep * (v + 1);
+                    for (let h = 0; h < hCount; h++) {
+                        const yaw = h * yawStep;
+                        views.push({
+                            yaw: yaw,
+                            pitch: pitch,
+                            name: `Y${yaw.toFixed(0)}_P${pitch.toFixed(0)}`
+                        });
+                    }
+                }
+                return views;
+            }
+        }
+
+        async function generateViews() {
+            if (!sourceImage) return;
+
+            generatedCanvases = [];
+            gridContainer.innerHTML = '';
+            progressDiv.classList.add('active');
+
+            const viewpoints = getViewpoints();
+            const viewSize = parseInt(viewSizeSlider.value);
+            const fov = parseFloat(fovSlider.value);
+
+            // Determine grid columns
+            const layout = layoutSelect.value;
+            let gridCols = 3;
+            if (layout === 'equator') gridCols = 4;
+            else if (layout === 'cube') gridCols = 3;
+            else if (layout === 'standard') gridCols = 4;
+            else if (layout === 'dense') gridCols = 4;
+            else gridCols = Math.min(4, parseInt(horizSlider.value));
+
+            gridContainer.style.gridTemplateColumns = `repeat(${gridCols}, 1fr)`;
+
+            for (let i = 0; i < viewpoints.length; i++) {
+                const vp = viewpoints[i];
+                const canvas = document.createElement('canvas');
+                canvas.width = viewSize;
+                canvas.height = viewSize;
+
+                renderPerspective(canvas, vp.yaw, vp.pitch, fov, viewSize, viewSize);
+                generatedCanvases.push({ canvas, name: vp.name });
+
+                const viewItem = document.createElement('div');
+                viewItem.className = 'view-item';
+                viewItem.innerHTML = `
+                    <canvas width="${viewSize}" height="${viewSize}"></canvas>
+                    <div class="view-label">${vp.name}</div>
+                `;
+                const displayCanvas = viewItem.querySelector('canvas');
+                displayCanvas.getContext('2d').drawImage(canvas, 0, 0);
+                gridContainer.appendChild(viewItem);
+
+                const progress = ((i + 1) / viewpoints.length) * 100;
+                progressFill.style.width = progress + '%';
+                progressText.textContent = Math.round(progress) + '%';
+
+                await new Promise(resolve => setTimeout(resolve, 0));
+            }
+
+            outputCard.classList.remove('hidden');
+            document.getElementById('viewCount').textContent = viewpoints.length;
+            setTimeout(() => progressDiv.classList.remove('active'), 500);
+        }
+
+        function renderPerspective(canvas, yaw, pitch, fov, outWidth, outHeight) {
+            const srcCtx = sourceCanvas.getContext('2d');
+            const dstCtx = canvas.getContext('2d');
+
+            const srcData = srcCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
+            const dstData = dstCtx.createImageData(outWidth, outHeight);
+
+            const yawRad = (yaw * Math.PI) / 180;
+            const pitchRad = (pitch * Math.PI) / 180;
+            const fovRad = (fov * Math.PI) / 180;
+
+            const f = outWidth / (2 * Math.tan(fovRad / 2));
+
+            for (let y = 0; y < outHeight; y++) {
+                for (let x = 0; x < outWidth; x++) {
+                    const nx = (x - outWidth / 2) / f;
+                    const ny = (y - outHeight / 2) / f;
+
+                    let dx = nx;
+                    let dy = -ny;
+                    let dz = 1;
+
+                    const len = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                    dx /= len;
+                    dy /= len;
+                    dz /= len;
+
+                    const dy2 = dy * Math.cos(pitchRad) - dz * Math.sin(pitchRad);
+                    const dz2 = dy * Math.sin(pitchRad) + dz * Math.cos(pitchRad);
+
+                    const dx3 = dx * Math.cos(yawRad) + dz2 * Math.sin(yawRad);
+                    const dz3 = -dx * Math.sin(yawRad) + dz2 * Math.cos(yawRad);
+
+                    const theta = Math.atan2(dx3, dz3);
+                    const phi = Math.asin(dy2);
+
+                    const srcX = ((theta + Math.PI) / (2 * Math.PI)) * sourceCanvas.width;
+                    const srcY = ((Math.PI / 2 - phi) / Math.PI) * sourceCanvas.height;
+
+                    const x0 = Math.floor(srcX) % sourceCanvas.width;
+                    const x1 = (x0 + 1) % sourceCanvas.width;
+                    const y0 = Math.max(0, Math.min(sourceCanvas.height - 1, Math.floor(srcY)));
+                    const y1 = Math.max(0, Math.min(sourceCanvas.height - 1, y0 + 1));
+
+                    const fx = srcX - Math.floor(srcX);
+                    const fy = srcY - Math.floor(srcY);
+
+                    const getPixel = (px, py) => {
+                        const idx = (py * sourceCanvas.width + px) * 4;
+                        return [
+                            srcData.data[idx],
+                            srcData.data[idx + 1],
+                            srcData.data[idx + 2],
+                            srcData.data[idx + 3]
+                        ];
+                    };
+
+                    const p00 = getPixel(x0, y0);
+                    const p10 = getPixel(x1, y0);
+                    const p01 = getPixel(x0, y1);
+                    const p11 = getPixel(x1, y1);
+
+                    const dstIdx = (y * outWidth + x) * 4;
+                    for (let c = 0; c < 4; c++) {
+                        const v0 = p00[c] * (1 - fx) + p10[c] * fx;
+                        const v1 = p01[c] * (1 - fx) + p11[c] * fx;
+                        dstData.data[dstIdx + c] = v0 * (1 - fy) + v1 * fy;
+                    }
+                }
+            }
+
+            dstCtx.putImageData(dstData, 0, 0);
+        }
+
+        async function downloadAll() {
+            if (generatedCanvases.length === 0) return;
+
+            const zip = new JSZip();
+
+            // Use uploaded filename (without extension) for the folder name
+            const baseName = currentFileName ? currentFileName.replace(/\.[^/.]+$/, '') : 'perspective_views';
+            const folder = zip.folder(baseName);
+
+            for (let i = 0; i < generatedCanvases.length; i++) {
+                const { canvas, name } = generatedCanvases[i];
+                const dataUrl = canvas.toDataURL('image/png');
+                const base64Data = dataUrl.split(',')[1];
+                folder.file(`view_${i + 1}_${name}.png`, base64Data, { base64: true });
+            }
+
+            const blob = await zip.generateAsync({ type: 'blob' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `${baseName}_views.zip`;
+            link.click();
+        }
+    </script>
+</body>
+
+</html>
