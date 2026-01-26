@@ -77,7 +77,6 @@ Your job is to identify construction elements in an image and classify them acco
 
 You MUST respond with a JSON object using EXACTLY this structure:
 {{
-  "thought_process": "<your step-by-step reasoning about what you see>",
   "identified_objects": [
     {{
       "class": "<Class name from taxonomy>",
@@ -89,7 +88,7 @@ You MUST respond with a JSON object using EXACTLY this structure:
 }}
 
 CRITICAL REQUIREMENTS:
-1. Use EXACTLY these field names: "thought_process", "identified_objects", "class", "category", "stage", "bbox_2d"
+1. Use EXACTLY these field names: "identified_objects", "class", "category", "stage", "bbox_2d"
 2. bbox_2d must be an array of 4 integers: [ymin, xmin, ymax, xmax] in pixel coordinates
 3. Select Class, Category, and Stage values ONLY from the provided taxonomy
 4. Include ALL visible construction elements{class_hint}"""
@@ -100,7 +99,7 @@ AVAILABLE TAXONOMY (Class | Category | Stage):
 {taxonomy_table}
 
 Instructions:
-1. First, describe your reasoning in "thought_process" - what materials, textures, and construction elements do you observe?
+1. First, observe the materials, textures, and construction elements thoroughly.
 2. Then, list every identified element in "identified_objects" with:
    - "class": The main class from the taxonomy (e.g., "Concrete", "Structural Steel", "Mechanical")
    - "category": The specific category (e.g., "Structural Beams - Steel", "Mechanical Duct")
@@ -145,7 +144,7 @@ Remember: Use the EXACT field names specified. Do NOT use alternative names like
         # Normalize result - handle both list and dict responses
         if isinstance(parsed_result, list):
             # Model returned list directly, wrap it
-            parsed_result = {"thought_process": "", "identified_objects": parsed_result}
+            parsed_result = {"identified_objects": parsed_result}
         
         # Handle nested structure variations
         identified_objects = parsed_result.get("identified_objects", [])
@@ -158,9 +157,6 @@ Remember: Use the EXACT field names specified. Do NOT use alternative names like
         
         if verbose:
             print("\n=== Analysis Results ===")
-            thought = parsed_result.get('thought_process', '') if isinstance(parsed_result, dict) else ''
-            if thought:
-                print(f"Thinking: {thought}\n")
             print(f"{'CLASS':<15} | {'CATEGORY':<30} | {'STAGE':<25} | {'BBOX'}")
             print("-" * 90)
             for item in identified_objects:

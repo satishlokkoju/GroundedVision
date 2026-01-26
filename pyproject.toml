@@ -27,7 +27,19 @@ dependencies = [
     "tqdm",
     "typer",
     "requests",
-    "pillow"
+    "pillow",
+    "matplotlib",
+    "jupyter",
+    "notebook",
+    "ipywidgets",
+    "ipycanvas",
+    "ipympl",
+    "pycocotools",
+    "decord",
+    "opencv-python",
+    "einops",
+    "scikit-image",
+    "scikit-learn",
 ]
 requires-python = "~=3.12.0"
 
