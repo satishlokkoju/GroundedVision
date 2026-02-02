@@ -932,7 +932,20 @@
         function onPointerMove(e) {
             if (isUserInteracting) {
                 lon = (onPointerDownMouseX - e.clientX) * 0.1 + onPointerDownLon;
-                lat = (e.clientY - onPointerDownMouseY) * 0.1 + onPointerDownLat;
+                let newLat = (e.clientY - onPointerDownMouseY) * 0.1 + onPointerDownLat;
+
+                // Clamp lat immediately and reset baseline if we hit the limit
+                // This prevents controls from going erratic at the poles
+                if (newLat > 85) {
+                    newLat = 85;
+                    onPointerDownLat = 85;
+                    onPointerDownMouseY = e.clientY;
+                } else if (newLat < -85) {
+                    newLat = -85;
+                    onPointerDownLat = -85;
+                    onPointerDownMouseY = e.clientY;
+                }
+                lat = newLat;
             }
         }
 
@@ -955,7 +968,19 @@
             if (e.touches.length === 1 && isUserInteracting) {
                 e.preventDefault();
                 lon = (onPointerDownMouseX - e.touches[0].clientX) * 0.1 + onPointerDownLon;
-                lat = (e.touches[0].clientY - onPointerDownMouseY) * 0.1 + onPointerDownLat;
+                let newLat = (e.touches[0].clientY - onPointerDownMouseY) * 0.1 + onPointerDownLat;
+
+                // Clamp lat immediately and reset baseline if we hit the limit
+                if (newLat > 85) {
+                    newLat = 85;
+                    onPointerDownLat = 85;
+                    onPointerDownMouseY = e.touches[0].clientY;
+                } else if (newLat < -85) {
+                    newLat = -85;
+                    onPointerDownLat = -85;
+                    onPointerDownMouseY = e.touches[0].clientY;
+                }
+                lat = newLat;
             }
         }
 
@@ -1006,6 +1031,7 @@
             camera.target.y = 500 * Math.cos(phi);
             camera.target.z = 500 * Math.sin(phi) * Math.sin(theta);
 
+            camera.up.set(0, 1, 0);
             camera.lookAt(camera.target);
 
             // Update view angle display
