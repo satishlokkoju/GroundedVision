@@ -21,6 +21,7 @@ def rotate_equirectangular(image, pitch, yaw, roll, order='XYZ'):
     Returns:
         Rotated equirectangular image
     """
+    pitch = pitch - 90
     height, width = image.shape[:2]
     
     # Create rotation matrix from Euler angles

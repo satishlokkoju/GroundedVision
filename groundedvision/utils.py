@@ -168,7 +168,7 @@ class EquirectangularConverter:
         
         return Image.fromarray(output)
     
-    def generate_cube_map(self, face_size=512, output_dir='cube_faces'):
+    def generate_cube_map(self, face_size=512, fov=90, output_dir='cube_faces'):
         """
         Generate 6 cube map faces
         
@@ -180,22 +180,51 @@ class EquirectangularConverter:
             Dictionary of face names to PIL Images
         """
         faces = {
-            'front': (0, 0),
-            'right': (90, 0),
-            'back': (180, 0),
-            'left': (-90, 0),
-            'down': (0, 90),
-            'up': (0, -90)
+            '3': (0, 0),
+            '4': (90, 0),
+            '1': (180, 0),
+            '2': (-90, 0),
+            '6': (0, 90),
+            '5': (0, -90)
         }
         
         results = {}
         Path(output_dir).mkdir(parents=True, exist_ok=True)
         
         for name, (yaw, pitch) in faces.items():
-            img = self.render_perspective(yaw, pitch, 90, face_size, face_size)
+            img = self.render_perspective(yaw, pitch, fov=fov, output_height=face_size, output_width=face_size)
             results[name] = img
             img.save(f'{output_dir}/{name}.png')
             logger.info(f'Generated {name} face')
+        
+        # Create 3x2 collage with faces arranged as:
+        # 1 2 3
+        # 4 5 6
+        
+        # Collage without border
+        collage = Image.new('RGB', (face_size * 3, face_size * 2))
+        collage.paste(results['1'], (0, 0))
+        collage.paste(results['2'], (face_size, 0))
+        collage.paste(results['3'], (face_size * 2, 0))
+        collage.paste(results['4'], (0, face_size))
+        collage.paste(results['5'], (face_size, face_size))
+        collage.paste(results['6'], (face_size * 2, face_size))
+        collage.save(f'{output_dir}/collage.png')
+        logger.info('Generated cube map collage')
+        
+        # Collage with border
+        border = 2  # Border width in pixels
+        collage_width = face_size * 3 + border * 4  # 4 borders: left, between 1-2, between 2-3, right
+        collage_height = face_size * 2 + border * 3  # 3 borders: top, between rows, bottom
+        collage_border = Image.new('RGB', (collage_width, collage_height), color=(255, 255, 255))  # White background
+        collage_border.paste(results['1'], (border, border))
+        collage_border.paste(results['2'], (border * 2 + face_size, border))
+        collage_border.paste(results['3'], (border * 3 + face_size * 2, border))
+        collage_border.paste(results['4'], (border, border * 2 + face_size))
+        collage_border.paste(results['5'], (border * 2 + face_size, border * 2 + face_size))
+        collage_border.paste(results['6'], (border * 3 + face_size * 2, border * 2 + face_size))
+        collage_border.save(f'{output_dir}/collage_border.png')
+        logger.info('Generated cube map collage with border')
         
         return results
     

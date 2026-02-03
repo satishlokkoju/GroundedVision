@@ -2,7 +2,7 @@ import os
 from groundedvision.utils import EquirectangularConverter
 from loguru import logger
 
-def projective_view(image_path: str, output_dir: str):
+def projective_view(image_path: str, fov: int, output_dir: str):
 
     # Get File name and extension
     file_name = os.path.basename(image_path)
@@ -13,7 +13,7 @@ def projective_view(image_path: str, output_dir: str):
     
     # Option 1: Generate cube map (6 faces)
     logger.info('\n=== Generating Cube Map ===')
-    cube_faces = converter.generate_cube_map(face_size=1024, output_dir=f'{output_dir}/{file_name}_cube_map')
+    cube_faces = converter.generate_cube_map(face_size=1024, fov=fov, output_dir=f'{output_dir}/{file_name}_cube_map')
     
     '''
 
@@ -22,7 +22,7 @@ def projective_view(image_path: str, output_dir: str):
     grid_views = converter.generate_grid(
         h_count=8, 
         v_count=4, 
-        fov=90, 
+        fov=fov, 
         view_size=512, 
         output_dir=f'{output_dir}/{file_name}_grid_8x4'
     )
@@ -32,7 +32,7 @@ def projective_view(image_path: str, output_dir: str):
     dense_views = converter.generate_grid(
         h_count=12, 
         v_count=6, 
-        fov=75, 
+        fov=fov, 
         view_size=512, 
         output_dir=f'{output_dir}/{file_name}_grid_12x6'
     )
@@ -41,7 +41,7 @@ def projective_view(image_path: str, output_dir: str):
     logger.info('\n=== Generating Equator Band ===')
     equator_views = converter.generate_equator_band(
         count=4, 
-        fov=90, 
+        fov=fov, 
         view_size=512, 
         output_dir=f'{output_dir}/{file_name}_equator'
     )
@@ -51,7 +51,7 @@ def projective_view(image_path: str, output_dir: str):
     custom_view = converter.render_perspective(
         yaw=45,      # Look 45° to the right
         pitch=30,    # Look 30° up
-        fov=90,      # 90° field of view
+        fov=fov,      # 90° field of view
         output_width=1920,
         output_height=1080
     )
