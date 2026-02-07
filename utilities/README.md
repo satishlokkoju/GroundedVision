@@ -11,7 +11,7 @@ This folder contains browser-based HTML utilities for working with 360° equirec
 | [equirectangular.html](#equirectangularhtml) | Generate perspective views from 360° panoramas |
 | [viewer360.html](#viewer360html) | Interactive 360° image viewer |
 | [viewer360_compare.html](#viewer360_comparehtml) | Compare and align two 360° images |
-| [player.html](#playerhtml) | Interactive 360° video player |
+| [player360.html](#player360html) | Interactive 360° video player |
 
 ---
 
