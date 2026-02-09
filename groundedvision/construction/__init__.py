@@ -37,5 +37,5 @@ __all__ = [
     "analyze_mep",
     "analyze_structural",
     "analyze_finishes",
-    "analyze_all_domains",
+    "analyze_all_domains"
 ]
