@@ -8,33 +8,21 @@ Usage:
     python equirect_to_cubemap.py -i input_panorama.jpg -o output_prefix -r 1024
 """
 
-import argparse
 import numpy as np
 from PIL import Image
 
 
-def parse_arguments():
-    """Parse command line arguments."""
-    parser = argparse.ArgumentParser(
-        description='Convert equirectangular panorama to cube map faces'
-    )
-    parser.add_argument('-i', '--input', required=True, help='Input equirectangular image')
-    parser.add_argument('-o', '--output', required=True, help='Output filename prefix')
-    parser.add_argument('-r', '--resolution', type=int, default=1024, 
-                        help='Cube face resolution in pixels (default: 1024)')
-    return parser.parse_args()
-
-
-def create_cube_face_coordinates(edge: int) -> tuple:
+def create_cube_face_coordinates(edge: int, fov_deg: float = 90.0) -> tuple:
     """
     Create normalized coordinate grids for a cube face.
     
     Args:
         edge: Edge length in pixels
+        fov_deg: Field of view in degrees (default 90° for standard cubemap)
         
     Returns:
         Tuple of (a, b) coordinate arrays, each of shape (edge, edge)
-        Values are in range [-1, 1]
+        Values are scaled by tan(fov/2) for the specified FOV
     """
     # Create coordinate grids
     i = np.arange(edge)
@@ -44,6 +32,14 @@ def create_cube_face_coordinates(edge: int) -> tuple:
     # Normalize to range [-1, 1]
     a = (2.0 * ii) / edge - 1.0
     b = (2.0 * jj) / edge - 1.0
+    
+    # Scale by FOV (tan of half-angle)
+    # For 90° FOV, scale = 1.0 (standard cubemap)
+    # For wider FOV, scale > 1.0 (faces overlap)
+    # For narrower FOV, scale < 1.0 (faces have gaps)
+    fov_scale = np.tan(np.radians(fov_deg / 2.0))
+    a = a * fov_scale
+    b = b * fov_scale
     
     return a, b
 
@@ -161,7 +157,8 @@ def bilinear_interpolate(img: np.ndarray, uf: np.ndarray, vf: np.ndarray) -> np.
     return np.clip(result, 0, 255).astype(np.uint8)
 
 
-def generate_cube_face(img_in: np.ndarray, face: int, resolution: int) -> np.ndarray:
+def generate_cube_face(img_in: np.ndarray, face: int, resolution: int,
+                       fov_deg: float = 90.0) -> np.ndarray:
     """
     Generate a single cube map face from the equirectangular image.
     
@@ -169,14 +166,15 @@ def generate_cube_face(img_in: np.ndarray, face: int, resolution: int) -> np.nda
         img_in: Input equirectangular image as numpy array (H, W, C)
         face: Face index (0-5)
         resolution: Output face resolution
+        fov_deg: Field of view in degrees (default 90° for standard cubemap)
     
     Returns:
         Face image as numpy array of shape (resolution, resolution, 4)
     """
     height, width = img_in.shape[:2]
     
-    # Create coordinate grids
-    a, b = create_cube_face_coordinates(resolution)
+    # Create coordinate grids with FOV scaling
+    a, b = create_cube_face_coordinates(resolution, fov_deg)
     
     # Convert to 3D direction vectors
     x, y, z = out_img_to_xyz_vectorized(a, b, face)
@@ -195,7 +193,7 @@ def generate_cube_face(img_in: np.ndarray, face: int, resolution: int) -> np.nda
     return face_img
 
 
-def convert_back(img_in: np.ndarray, resolution: int) -> list:
+def convert_back(img_in: np.ndarray, resolution: int, fov_deg: float = 120.0) -> list:
     """
     Convert equirectangular panorama to 6 cube map faces.
     Vectorized implementation for efficient processing.
@@ -203,6 +201,10 @@ def convert_back(img_in: np.ndarray, resolution: int) -> list:
     Args:
         img_in: Input equirectangular image as numpy array
         resolution: Output cube face resolution in pixels
+        fov_deg: Field of view in degrees (default 90° for standard cubemap)
+                 - 90°: Standard cubemap with no overlap
+                 - >90°: Faces overlap (useful for blending)
+                 - <90°: Faces have gaps (not recommended for complete cubemaps)
     
     Returns:
         List of 6 PIL Images representing the cube faces
@@ -214,7 +216,7 @@ def convert_back(img_in: np.ndarray, resolution: int) -> list:
         print(f"  Processing face {face} ({face_names[face]})...")
         
         # Generate face using vectorized operations
-        face_img = generate_cube_face(img_in, face, resolution)
+        face_img = generate_cube_face(img_in, face, resolution, fov_deg)
         
         # Convert to PIL Image
         output_faces.append(Image.fromarray(face_img))
