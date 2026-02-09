@@ -65,9 +65,9 @@
 ## Development Setup
 
 ```
-conda create -n groundedvision_dev python=3.12
+conda create -n track3d_dev python=3.12
 conda deactivate
-conda activate groundedvision_dev
+conda activate track3d_dev
 ```
 
 ### Install dependecies
