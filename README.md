@@ -77,6 +77,12 @@ make requirements
 ```
 
 
+### Create Jupyter Kernel
+```
+python -m ipykernel install --user --name=track3d_dev --display-name "Python (track3d_dev)"
+```
+
+
 ### Generate synthetic Data for Training and testing
 
 FLUX.2 is the recent series of image generation models from Black Forest Labs.
