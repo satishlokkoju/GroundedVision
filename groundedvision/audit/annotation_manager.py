@@ -1,5 +1,5 @@
 """
-Annotation Manager for CV Model Auditing
+Annotation Manager for Grounded Vision Models Auditing
 
 This module provides utilities for managing annotations during manual audit
 of computer vision model outputs in Jupyter notebooks.
@@ -11,7 +11,6 @@ from datetime import datetime
 from typing import Optional, Dict, Any, List
 from dataclasses import dataclass, asdict, field
 from pathlib import Path
-
 try:
     from IPython.display import display, clear_output
     import ipywidgets as widgets
@@ -26,7 +25,7 @@ class Annotation:
     sample_id: str
     auditor_alias: str
     timestamp: str
-    verdict: str  # e.g., "correct", "incorrect", "partial", "skip"
+    verdict: str  # e.g., "True", "False", "skip"
     model_output: Optional[Dict[str, Any]] = None
     ground_truth: Optional[Dict[str, Any]] = None
     notes: str = ""
@@ -36,46 +35,43 @@ class Annotation:
 
 class AnnotationManager:
     """
-    Manages annotations for CV model auditing in Jupyter notebooks.
+    Manages annotations for Grounded Vision model auditing in Jupyter notebooks.
     
     Usage:
-        manager = AnnotationManager("path/to/annotations.json")
+        manager = AnnotationManager()
         manager.start_session()  # Prompts for alias
         
         # For each sample:
         manager.add_annotation(
             sample_id="sample_001",
-            verdict="correct",
+            verdict="True",
             notes="Model correctly identified all changes"
         )
         
         manager.save()  # Saves after each annotation by default
     """
     
-    def __init__(
-        self,
-        annotations_file: str,
-        auto_save: bool = True
-    ):
+    def __init__(self, auto_save: bool = True):
         """
         Initialize the annotation manager.
         
         Args:
-            annotations_file: Path to the JSON file for storing annotations.
             auto_save: Whether to automatically save after each annotation.
         """
-        self.annotations_file = Path(annotations_file)
         self.auto_save = auto_save
         self.annotations: List[Annotation] = []
         self.auditor_alias: Optional[str] = None
         self.session_start: Optional[str] = None
+        self.annotations_file: Optional[Path] = None  # FIXED: Initialize
         self._widget_output = None
-        
-        # Load existing annotations if file exists
-        self._load_annotations()
+
     
     def _load_annotations(self) -> None:
         """Load existing annotations from file."""
+
+        if self.annotations_file is None:
+            return
+            
         if self.annotations_file.exists():
             try:
                 with open(self.annotations_file, 'r') as f:
@@ -110,12 +106,24 @@ class AnnotationManager:
         
         if alias:
             self.auditor_alias = alias
-        elif HAS_WIDGETS:
+            self._setup_file_path()
+            self._load_annotations()  
+        elif HAS_WIDGETS:  
             self._prompt_alias_widget()
         else:
             self._prompt_alias_input()
-        
+            self._setup_file_path()
+            self._load_annotations()
+
         return self.auditor_alias
+    
+    def _setup_file_path(self) -> None:
+        """Set up the annotations file path based on auditor alias."""
+        if self.auditor_alias:
+            annotations_file = f"./annotation_data/annotations_{self.auditor_alias}.json"
+            self.annotations_file = Path(annotations_file)
+            # Create only the directory containing the file
+            self.annotations_file.parent.mkdir(parents=True, exist_ok=True)
     
     def _prompt_alias_widget(self) -> None:
         """Use ipywidgets to prompt for alias."""
@@ -137,6 +145,10 @@ class AnnotationManager:
         def on_submit(b):
             if alias_input.value.strip():
                 self.auditor_alias = alias_input.value.strip()
+                # Set up file path and load annotations
+                self._setup_file_path()
+                self._load_annotations()
+                
                 with output:
                     clear_output()
                     print(f"✓ Audit session started for: {self.auditor_alias}")
@@ -150,21 +162,20 @@ class AnnotationManager:
         submit_btn.on_click(on_submit)
         
         display(widgets.VBox([
-            widgets.HTML("<h3>🔍 Progress Tracking Model Audit Session</h3>"),
+            widgets.HTML("<h3>🔍 Construction Progress Tracking Model Audit Session</h3>"),
             alias_input,
             submit_btn,
             output
         ]))
     
     def _prompt_alias_input(self) -> None:
-        """Use standard input to prompt for alias."""
+        """FIXED: Use standard input to prompt for alias (non-widget fallback)."""
         while not self.auditor_alias:
             alias = input("Enter your auditor alias: ").strip()
             if alias:
                 self.auditor_alias = alias
                 print(f"✓ Audit session started for: {self.auditor_alias}")
                 print(f"  Session start: {self.session_start}")
-                print(f"  Existing annotations: {len(self.annotations)}")
             else:
                 print("⚠ Please enter a valid alias")
     
@@ -218,6 +229,9 @@ class AnnotationManager:
     
     def save(self) -> None:
         """Save annotations to file."""
+        if self.annotations_file is None:
+            raise ValueError("No annotations file set. Call start_session() first.")
+        
         # Ensure directory exists
         self.annotations_file.parent.mkdir(parents=True, exist_ok=True)
         
@@ -269,84 +283,6 @@ class AnnotationManager:
         annotated = self.get_annotated_sample_ids()
         return [sid for sid in all_sample_ids if sid not in annotated]
     
-    def create_annotation_widget(
-        self,
-        sample_id: str,
-        model_output: Optional[Dict[str, Any]] = None,
-        verdicts: List[str] = None,
-        callback = None
-    ):
-        """
-        Create an interactive widget for annotation (Jupyter only).
-        
-        Args:
-            sample_id: The sample being annotated.
-            model_output: Model output to display.
-            verdicts: List of possible verdict options.
-            callback: Optional callback function after annotation is submitted.
-        """
-        if not HAS_WIDGETS:
-            print("⚠ ipywidgets not available. Use add_annotation() directly.")
-            return
-        
-        if verdicts is None:
-            verdicts = ["correct", "incorrect", "partial", "skip"]
-        
-        verdict_radio = widgets.RadioButtons(
-            options=verdicts,
-            description='Verdict:',
-            style={'description_width': 'initial'}
-        )
-        
-        notes_text = widgets.Textarea(
-            value='',
-            placeholder='Add any notes here...',
-            description='Notes:',
-            layout=widgets.Layout(width='100%', height='100px')
-        )
-        
-        confidence_slider = widgets.FloatSlider(
-            value=0.8,
-            min=0,
-            max=1,
-            step=0.1,
-            description='Confidence:',
-            style={'description_width': 'initial'}
-        )
-        
-        submit_btn = widgets.Button(
-            description='Submit Annotation',
-            button_style='success',
-            icon='check'
-        )
-        
-        output = widgets.Output()
-        
-        def on_submit(b):
-            self.add_annotation(
-                sample_id=sample_id,
-                verdict=verdict_radio.value,
-                notes=notes_text.value,
-                model_output=model_output,
-                confidence=confidence_slider.value
-            )
-            with output:
-                clear_output()
-                print(f"✓ Annotation submitted for {sample_id}")
-            if callback:
-                callback()
-        
-        submit_btn.on_click(on_submit)
-        
-        display(widgets.VBox([
-            widgets.HTML(f"<h4>Annotate: {sample_id}</h4>"),
-            verdict_radio,
-            confidence_slider,
-            notes_text,
-            submit_btn,
-            output
-        ]))
-    
     def print_summary(self) -> None:
         """Print a formatted summary of annotations."""
         summary = self.get_summary()
@@ -364,20 +300,16 @@ class AnnotationManager:
 
 
 # Convenience function for quick setup
-def create_audit_session(
-    annotations_file: str,
-    alias: Optional[str] = None
-) -> AnnotationManager:
+def create_audit_session(alias: Optional[str] = None) -> AnnotationManager:
     """
     Quick setup for an audit session.
     
     Args:
-        annotations_file: Path to annotations JSON file.
         alias: Optional auditor alias (will prompt if not provided).
         
     Returns:
         Configured AnnotationManager instance.
     """
-    manager = AnnotationManager(annotations_file)
+    manager = AnnotationManager()
     manager.start_session(alias)
     return manager
